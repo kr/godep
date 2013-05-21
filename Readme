@@ -28,7 +28,7 @@ Godeps format:
 - packages in the standard library are omitted
 - packages inside another listed package are omitted
 - each dep line has two whitespace-separated fields:
-  - commit hash
+  - version (as commit hash, revision number, or tag)
   - package name
 
 Example Godeps:
