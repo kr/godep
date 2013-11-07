@@ -179,7 +179,7 @@ func (v *VCS) run1(dir string, cmdline string, kv []string, verbose bool) ([]byt
 	}
 	args := strings.Fields(cmdline)
 	for i, arg := range args {
-		args[i] = expand(m, arg)
+		args[i] = strings.TrimRight(expand(m, arg), "+")
 	}
 
 	_, err := exec.LookPath(v.vcs.Cmd)
