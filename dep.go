@@ -92,17 +92,16 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		if pkg.Standard {
 			continue
 		}
-		vcs, reporoot, err := VCSFromDir(pkg.Dir, pkg.Root)
+		vcs, _, err := VCSFromDir(pkg.Dir, pkg.Root)
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		importPath := strings.TrimPrefix(reporoot, "src"+string(os.PathSeparator))
-		if contains(seen, importPath) {
+		if contains(seen, pkg.ImportPath) {
 			continue
 		}
-		seen = append(seen, importPath)
+		seen = append(seen, pkg.ImportPath)
 		id, err := vcs.identify(pkg.Dir)
 		if err != nil {
 			log.Println(err)
