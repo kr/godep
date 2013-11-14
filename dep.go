@@ -44,7 +44,7 @@ type Dependency struct {
 // pkgs is the list of packages to read dependencies
 func (g *Godeps) Load(pkgs []*Package) error {
 	var err1 error
-	var path, seen []string
+	var path, rootPaths []string
 	for _, p := range pkgs {
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
@@ -62,7 +62,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			continue
 		}
 		importPath := strings.TrimPrefix(reporoot, "src"+string(os.PathSeparator))
-		seen = append(seen, importPath)
+		rootPaths = append(rootPaths, importPath)
 		path = append(path, p.Deps...)
 	}
 	var testImports []string
@@ -99,10 +99,9 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			continue
 		}
 		importPath := strings.TrimPrefix(reporoot, "src"+string(os.PathSeparator))
-		if contains(seen, importPath) {
+		if contains(rootPaths, importPath) {
 			continue
 		}
-		seen = append(seen, importPath)
 		id, err := vcs.identify(pkg.Dir)
 		if err != nil {
 			log.Println(err)
