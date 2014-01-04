@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 type Package struct {
@@ -59,6 +60,12 @@ func LoadPackages(name ...string) (a []*Package, err error) {
 		}
 		if err != nil {
 			info.Error.Err = err.Error()
+		}
+		if info.Root == "" {
+			goPath := filepath.SplitList(os.Getenv("GOPATH"))
+			if len(goPath) > 0 {
+				info.Root = goPath[0]
+			}
 		}
 		a = append(a, info)
 	}
