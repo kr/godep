@@ -43,9 +43,9 @@ type Dependency struct {
 }
 
 // pkgs is the list of packages to read dependencies
-func (g *Godeps) Load(pkgs []*Package) error {
+func (g *Godeps) Load(pkgs []*Package, extonly bool) error {
 	var err1 error
-	var path, seen []string
+	var path, seen, home []string
 	for _, p := range pkgs {
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
@@ -56,14 +56,32 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		_, reporoot, err := VCSFromDir(p.Dir, p.Root)
-		if err != nil {
-			log.Println(err)
-			err1 = errors.New("error loading packages")
-			continue
+
+		// If we were called without a package name, p.Root will be
+		// unset, but we can use the current dir as the root
+		if p.Root == "" {
+			pwd, err := os.Getwd()
+			if err != nil {
+				log.Println(err)
+				err1 = errors.New("error loading packages")
+				continue
+			}
+			p.Root = pwd
 		}
-		importPath := strings.TrimPrefix(reporoot, "src"+string(os.PathSeparator))
-		seen = append(seen, importPath+"/")
+
+		if extonly {
+			// Keep track of all the "homes" of the specified packages
+			home = append(home, p.Root)
+		} else {
+			_, reporoot, err := VCSFromDir(p.Dir, p.Root)
+			if err != nil {
+				log.Println(err)
+				err1 = errors.New("error loading packages")
+				continue
+			}
+			importPath := strings.TrimPrefix(reporoot, "src"+string(os.PathSeparator))
+			seen = append(seen, importPath+"/")
+		}
 		path = append(path, p.Deps...)
 	}
 	var testImports []string
@@ -91,6 +109,11 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			continue
 		}
 		if pkg.Standard {
+			continue
+		}
+		// "home" contains the "homes" of the specified packages - in
+		// extonly mode we want to skip those
+		if extonly && containsPrefix(home, pkg.Dir) {
 			continue
 		}
 		vcs, _, err := VCSFromDir(pkg.Dir, pkg.Root)

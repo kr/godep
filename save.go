@@ -13,7 +13,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-copy=false] [packages]",
+	Usage: "save [-copy=false] [-extonly] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 Save writes a list of the dependencies of the named packages along
@@ -35,6 +35,10 @@ The dependency list is a JSON document with the following structure:
 
 If -copy=false is given, the list alone is written to file Godeps.
 
+If -extonly is given, only packages external to the current source
+tree are counted. This is useful if your source tree doesn't conform
+to go packaging guidelines, but its dependencies do.
+
 Otherwise, the list is written to Godeps/Godeps.json, and source
 code for all dependencies is copied into Godeps/_workspace.
 
@@ -44,9 +48,11 @@ For more about specifying packages, see 'go help packages'.
 }
 
 var flagCopy = true
+var flagExtonly = false
 
 func init() {
 	cmdSave.Flag.BoolVar(&flagCopy, "copy", true, "copy source code")
+	cmdSave.Flag.BoolVar(&flagExtonly, "extonly", false, "external packages only")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -65,7 +71,7 @@ func runSave(cmd *Command, args []string) {
 		args = []string{"."}
 	}
 	a := MustLoadPackages(args...)
-	err := g.Load(a)
+	err := g.Load(a, flagExtonly)
 	if err != nil {
 		log.Fatalln(err)
 	}
