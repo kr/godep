@@ -43,9 +43,9 @@ type Dependency struct {
 }
 
 // pkgs is the list of packages to read dependencies
-func (g *Godeps) Load(pkgs []*Package) error {
+func (g *Godeps) Load(pkgs []*Package, extonly bool) error {
 	var err1 error
-	var path, seen []string
+	var path, seen, home []string
 	for _, p := range pkgs {
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
@@ -56,14 +56,35 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		_, reporoot, err := VCSFromDir(p.Dir, p.Root)
-		if err != nil {
-			log.Println(err)
-			err1 = errors.New("error loading packages")
-			continue
+
+		if extonly {
+			// Keep track of all the "homes" of the specified
+			// packages. The home is the Root if set, or the p.Dir if
+			// the root cannot be determined (normally when saving
+			// "main" for a golang project that doesn't follow the
+			// directory naming conventions)
+			if p.Root != "" {
+				home = append(home, p.Root)
+			} else {
+				home = append(home, p.Dir)
+			}
+		} else {
+			if p.Root == "" {
+				log.Printf("Root dir cannot be determined for packages in %s.", p.Dir)
+				log.Println("  If these are all under your control, you could try running with -extonly.")
+				err1 = errors.New("error loading packages")
+				continue
+			}
+
+			_, reporoot, err := VCSFromDir(p.Dir, p.Root)
+			if err != nil {
+				log.Println(err)
+				err1 = errors.New("error loading packages")
+				continue
+			}
+			importPath := strings.TrimPrefix(reporoot, "src"+string(os.PathSeparator))
+			seen = append(seen, importPath+"/")
 		}
-		importPath := strings.TrimPrefix(reporoot, "src"+string(os.PathSeparator))
-		seen = append(seen, importPath+"/")
 		path = append(path, p.Deps...)
 	}
 	var testImports []string
@@ -92,6 +113,11 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			continue
 		}
 		if pkg.Standard {
+			continue
+		}
+		// "home" contains the "homes" of the specified packages - in
+		// extonly mode we want to skip those
+		if extonly && containsPrefix(home, pkg.Dir) {
 			continue
 		}
 		vcs, _, err := VCSFromDir(pkg.Dir, pkg.Root)
