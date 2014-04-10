@@ -65,12 +65,21 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	g := &Godeps{
+	manifest := "Godeps"
+	if saveCopy {
+		manifest = filepath.Join("Godeps", "Godeps.json")
+	}
+	var gold Godeps
+	err = ReadGodeps(manifest, &gold)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	gnew := &Godeps{
 		ImportPath: dot[0].ImportPath,
 		GoVersion:  ver,
 	}
 	if len(pkgs) > 0 {
-		g.Packages = pkgs
+		gnew.Packages = pkgs
 	} else {
 		pkgs = []string{"."}
 	}
@@ -78,21 +87,23 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	err = g.Load(a)
+	err = gnew.Load(a)
 	if err != nil {
 		return err
 	}
-	if a := badSandboxVCS(g.Deps); a != nil && !saveCopy {
+	if a := badSandboxVCS(gnew.Deps); a != nil && !saveCopy {
 		log.Println("Unsupported sandbox VCS:", strings.Join(a, ", "))
 		log.Printf("Instead, run: godep save -copy %s", strings.Join(pkgs, " "))
 		return errors.New("error")
 	}
-	if g.Deps == nil {
-		g.Deps = make([]Dependency, 0) // produce json [], not null
+	if gnew.Deps == nil {
+		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
-	manifest := "Godeps"
+	err = carryVersions(&gold, gnew)
+	if err != nil {
+		return err
+	}
 	if saveCopy {
-		manifest = filepath.Join("Godeps", "Godeps.json")
 		os.Remove("Godeps") // remove regular file if present; ignore error
 		path := filepath.Join("Godeps", "Readme")
 		err = writeFile(path, strings.TrimSpace(Readme)+"\n")
@@ -104,7 +115,7 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	_, err = g.WriteTo(f)
+	_, err = gnew.WriteTo(f)
 	if err != nil {
 		return err
 	}
@@ -118,17 +129,65 @@ func save(pkgs []string) error {
 		// starting at the project's root. For example,
 		//   godep go list ./...
 		workspace := filepath.Join("Godeps", "_workspace")
-		err = os.RemoveAll(workspace)
+		srcdir := filepath.Join(workspace, "src")
+		rem := subDeps(gold.Deps, gnew.Deps)
+		add := subDeps(gnew.Deps, gold.Deps)
+		err = removeSrc(srcdir, rem)
 		if err != nil {
 			return err
 		}
-		err = copySrc(filepath.Join(workspace, "src"), g)
+		err = copySrc(srcdir, add)
 		if err != nil {
 			return err
 		}
 		writeVCSIgnore(workspace)
 	}
 	return nil
+}
+
+type revError struct {
+	ImportPath string
+	HaveRev    string
+	WantRev    string
+}
+
+func (v *revError) Error() string {
+	return v.ImportPath + ": revision is " + v.HaveRev + ", want " + v.WantRev
+}
+
+func carryVersions(a, b *Godeps) error {
+	for i, d := range b.Deps {
+		for _, da := range a.Deps {
+			switch {
+			case d.ImportPath == da.ImportPath:
+				b.Deps[i].Rev = da.Rev
+				b.Deps[i].Comment = da.Comment
+			case strings.HasPrefix(d.ImportPath, da.ImportPath+"/"):
+				if da.Rev != d.Rev {
+					return &revError{d.ImportPath, d.Rev, da.Rev}
+				}
+			case strings.HasPrefix(da.ImportPath, d.root+"/"):
+				if da.Rev != d.Rev {
+					return &revError{d.ImportPath, d.Rev, da.Rev}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// subDeps returns a - b, using ImportPath for equality.
+func subDeps(a, b []Dependency) (diff []Dependency) {
+Diff:
+	for _, da := range a {
+		for _, db := range b {
+			if da.ImportPath == db.ImportPath {
+				continue Diff
+			}
+		}
+		diff = append(diff, da)
+	}
+	return diff
 }
 
 // badSandboxVCS returns a list of VCSes that don't work
@@ -143,13 +202,34 @@ func badSandboxVCS(deps []Dependency) (a []string) {
 	return uniq(a)
 }
 
-func copySrc(dir string, g *Godeps) error {
+func removeSrc(srcdir string, deps []Dependency) error {
+	for _, dep := range deps {
+		path := filepath.FromSlash(dep.ImportPath)
+		err := os.RemoveAll(filepath.Join(srcdir, path))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func copySrc(dir string, deps []Dependency) error {
 	ok := true
-	for _, dep := range g.Deps {
+	for _, dep := range deps {
 		srcdir := filepath.Join(dep.ws, "src")
+		rel, err := filepath.Rel(srcdir, dep.dir)
+		if err != nil { // this should never happen
+			return err
+		}
+		dstpkgroot := filepath.Join(dir, rel)
+		err = os.RemoveAll(dstpkgroot)
+		if err != nil {
+			log.Println(err)
+			ok = false
+		}
 		w := fs.Walk(dep.dir)
 		for w.Step() {
-			err := copyPkgFile(dir, srcdir, w)
+			err = copyPkgFile(dir, srcdir, w)
 			if err != nil {
 				log.Println(err)
 				ok = false
