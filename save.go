@@ -133,6 +133,17 @@ func save(pkgs []string) error {
 		//   godep go list ./...
 		workspace := filepath.Join("Godeps", "_workspace")
 		srcdir := filepath.Join(workspace, "src")
+
+		srcimport := filepath.Join(srcdir, gnew.ImportPath)
+		err = os.RemoveAll(srcimport)
+		if err != nil {
+			return err
+		}
+		err = relSymlink("./", srcimport)
+		if err != nil {
+			return err
+		}
+
 		rem := subDeps(gold.Deps, gnew.Deps)
 		add := subDeps(gnew.Deps, gold.Deps)
 		err = removeSrc(srcdir, rem)
@@ -343,6 +354,17 @@ func writeFile(name, body string) error {
 		return err
 	}
 	return ioutil.WriteFile(name, []byte(body), 0666)
+}
+
+// relSymlink creates a relative symlink to orig placing it at dest.
+func relSymlink(orig string, dest string) error {
+	destparent := filepath.Dir(dest)
+	os.MkdirAll(destparent, 0777)
+	rel, err := filepath.Rel(destparent, orig)
+	if err != nil {
+		return err
+	}
+	return os.Symlink(rel, dest)
 }
 
 const Readme = `
