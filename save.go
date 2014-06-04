@@ -102,11 +102,6 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	if a := badSandboxVCS(gnew.Deps); a != nil && !saveCopy {
-		log.Println("Unsupported sandbox VCS:", strings.Join(a, ", "))
-		log.Printf("Instead, run: godep save -copy %s", strings.Join(pkgs, " "))
-		return errors.New("error")
-	}
 	if gnew.Deps == nil {
 		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
