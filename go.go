@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -9,7 +10,9 @@ import (
 	"strings"
 )
 
-var spool = filepath.Join(os.TempDir(), "godep")
+var (
+	spool = filepath.Join(os.TempDir(), "godep")
+)
 
 var cmdGo = &Command{
 	Usage: "go command [arguments]",
@@ -31,9 +34,20 @@ is unnecessary and has been disabled. Instead, use
 // space is cheap and plentiful, and writing files is slow.
 // Everything is kept in the spool directory.
 func runGo(cmd *Command, args []string) {
-	gopath := prepareGopath()
-	if s := os.Getenv("GOPATH"); s != "" {
-		gopath += string(os.PathListSeparator) + os.Getenv("GOPATH")
+	gopath, err := prepareGopath()
+	if err != nil {
+		if !*pass {
+			log.Fatalln(err)
+		}
+		if s := os.Getenv("GOPATH"); s != "" {
+			gopath = os.Getenv("GOPATH")
+		} else {
+			log.Fatalln("No GOPATH is set in the environment")
+		}
+	} else {
+		if s := os.Getenv("GOPATH"); s != "" {
+			gopath += string(os.PathListSeparator) + os.Getenv("GOPATH")
+		}
 	}
 	if len(args) > 0 && args[0] == "get" {
 		log.Printf("invalid subcommand: %q", "go get")
@@ -46,22 +60,25 @@ func runGo(cmd *Command, args []string) {
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-	err := c.Run()
+	err = c.Run()
 	if err != nil {
-		log.Fatalln("go", err)
+		if !*silent {
+			log.Fatalln("go", err)
+		}
 	}
 }
 
 // prepareGopath reads dependency information from the filesystem
 // entry name, fetches any necessary code, and returns a gopath
 // causing the specified dependencies to be used.
-func prepareGopath() (gopath string) {
+func prepareGopath() (gopath string, err error) {
 	dir, isDir := findGodeps()
 	if dir == "" {
-		log.Fatalln("No Godeps found (or in any parent directory)")
+		err = errors.New("No Godeps found (or in any parent directory)")
+		return
 	}
 	if isDir {
-		return filepath.Join(dir, "Godeps", "_workspace")
+		return filepath.Join(dir, "Godeps", "_workspace"), nil
 	}
 	g, err := ReadAndLoadGodeps(filepath.Join(dir, "Godeps"))
 	if err != nil {
@@ -71,7 +88,7 @@ func prepareGopath() (gopath string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	return gopath
+	return gopath, nil
 }
 
 // findGodeps looks for a directory entry "Godeps" in the
