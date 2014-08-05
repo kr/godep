@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -315,11 +314,10 @@ func uniq(a []string) []string {
 func goVersion() (string, error) {
 	// Godep might have been compiled with a different
 	// version, so we can't just use runtime.Version here.
-	cmd := exec.Command("go", "version")
-	cmd.Stderr = os.Stderr
-	out, err := cmd.Output()
+	c := command("go", "version")
+	out, err := c.Output()
 	if err != nil {
-		return "", err
+		return "", errorWithCommand(err, c)
 	}
 	s := strings.TrimSpace(string(out))
 	s = strings.TrimSuffix(s, " "+runtime.GOOS+"/"+runtime.GOARCH)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 	"os/exec"
 )
 
@@ -26,9 +25,10 @@ func runGet(cmd *Command, args []string) {
 		args = []string{"."}
 	}
 
-	err := command("go", "get", "-d", args).Run()
+	goget := command("go", "get", "-d", args)
+	err := goget.Run()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln(errorWithCommand(err, goget))
 	}
 
 	// group import paths by Godeps location
@@ -53,25 +53,7 @@ func runGet(cmd *Command, args []string) {
 			c.Dir = dir
 		}
 		if err := c.Run(); err != nil {
-			log.Fatalln(err)
+			log.Fatalln(errorWithCommand(err, c))
 		}
 	}
-}
-
-// command is like exec.Command, but the returned
-// Cmd inherits stderr from the current process, and
-// elements of args may be either string or []string.
-func command(name string, args ...interface{}) *exec.Cmd {
-	var a []string
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case string:
-			a = append(a, v)
-		case []string:
-			a = append(a, v...)
-		}
-	}
-	c := exec.Command(name, a...)
-	c.Stderr = os.Stderr
-	return c
 }

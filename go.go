@@ -48,7 +48,7 @@ func runGo(cmd *Command, args []string) {
 	c.Stderr = os.Stderr
 	err := c.Run()
 	if err != nil {
-		log.Fatalln("go", err)
+		log.Fatalln("go", errorWithCommand(err, c))
 	}
 }
 

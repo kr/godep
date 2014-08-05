@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -201,7 +202,7 @@ func (v *VCS) run1(dir string, cmdline string, kv []string, verbose bool) ([]byt
 			fmt.Fprintf(os.Stderr, "# cd %s; %s %s\n", dir, v.vcs.Cmd, strings.Join(args, " "))
 			os.Stderr.Write(out)
 		}
-		return nil, err
+		return nil, errorWithCommand(err, cmd)
 	}
 	return out, nil
 }
