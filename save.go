@@ -17,7 +17,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [packages]",
+	Usage: "save [-r] [-tags=\"\"] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 Save writes a list of the dependencies of the named packages along
@@ -46,6 +46,9 @@ To update a dependency to a newer revision, use 'godep update'.
 If -r is given, import statements will be rewritten to refer
 directly to the copied source code.
 
+If -tags="<BUILD TAGS>" is given, the dependencies will be generated
+with the specified build tags.
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
@@ -54,11 +57,13 @@ For more about specifying packages, see 'go help packages'.
 var (
 	saveCopy = true
 	saveR    = false
+	tags     = ""
 )
 
 func init() {
 	cmdSave.Flag.BoolVar(&saveCopy, "copy", true, "copy source code")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
+	cmdSave.Flag.StringVar(&tags, "tags", "", "build tags")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -96,7 +101,12 @@ func save(pkgs []string) error {
 	} else {
 		pkgs = []string{"."}
 	}
-	a, err := LoadPackages(pkgs...)
+	var a []*Package
+	if len(tags) > 0 {
+		a, err = LoadPackagesWithTags(tags, pkgs...)
+	} else {
+		a, err = LoadPackages(pkgs...)
+	}
 	if err != nil {
 		return err
 	}
