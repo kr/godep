@@ -36,6 +36,9 @@ func LoadPackages(name ...string) (a []*Package, err error) {
 		return nil, nil
 	}
 	args := []string{"list", "-e", "-json"}
+	if buildTags != "" {
+		args = append(args, "-tags", buildTags)
+	}
 	cmd := exec.Command("go", append(args, name...)...)
 	r, err := cmd.StdoutPipe()
 	if err != nil {

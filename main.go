@@ -59,8 +59,11 @@ var commands = []*Command{
 	cmdUpdate,
 }
 
+var buildTags = ""
+
 func main() {
 	flag.Usage = usageExit
+	flag.StringVar(&buildTags, "tags", "", "build tags to use")
 	flag.Parse()
 	log.SetFlags(0)
 	log.SetPrefix("godep: ")
@@ -93,7 +96,7 @@ Godep is a tool for managing Go package dependencies.
 
 Usage:
 
-	godep command [arguments]
+	godep [-tags buildtags] command [arguments]
 
 The commands are:
 {{range .}}
