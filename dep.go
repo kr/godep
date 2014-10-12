@@ -52,6 +52,7 @@ type Dependency struct {
 func (g *Godeps) Load(pkgs []*Package) error {
 	var err1 error
 	var path, seen []string
+	var srcRoot string
 	for _, p := range pkgs {
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
@@ -62,19 +63,24 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		_, reporoot, err := VCSFromDir(p.Dir, filepath.Join(p.Root, "src"))
+		if p.Root != "" {
+			srcRoot = filepath.Join(p.Root, "src")
+		} else {
+			srcRoot = filepath.Dir(p.Dir)
+		}
+		_, reporoot, err := VCSFromDir(p.Dir, srcRoot)
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading packages")
 			continue
 		}
 		seen = append(seen, filepath.ToSlash(reporoot))
-		path = append(path, p.Deps...)
+		path = appendNonLocal(path, p.Deps...)
 	}
 	var testImports []string
 	for _, p := range pkgs {
-		testImports = append(testImports, p.TestImports...)
-		testImports = append(testImports, p.XTestImports...)
+		testImports = appendNonLocal(testImports, p.TestImports...)
+		testImports = appendNonLocal(testImports, p.XTestImports...)
 	}
 	ps, err := LoadPackages(testImports...)
 	if err != nil {
@@ -89,8 +95,9 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		path = append(path, p.ImportPath)
-		path = append(path, p.Deps...)
+		fmt.Println("Adding:", p.ImportPath, "\n   deps:", p.Deps)
+		path = appendNonLocal(path, p.ImportPath)
+		path = appendNonLocal(path, p.Deps...)
 	}
 	for i, p := range path {
 		path[i] = unqualify(p)
@@ -110,7 +117,12 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		if pkg.Standard {
 			continue
 		}
-		vcs, reporoot, err := VCSFromDir(pkg.Dir, filepath.Join(pkg.Root, "src"))
+		if pkg.Root != "" {
+			srcRoot = filepath.Join(pkg.Root, "src")
+		} else {
+			srcRoot = filepath.Dir(pkg.Dir)
+		}
+		vcs, reporoot, err := VCSFromDir(pkg.Dir, srcRoot)
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading dependencies")
@@ -344,4 +356,15 @@ func goVersion() (string, error) {
 	s = strings.TrimSuffix(s, " "+runtime.GOOS+"/"+runtime.GOARCH)
 	s = strings.TrimPrefix(s, "go version ")
 	return s, nil
+}
+
+// appends only non local dependencies (those not referenced using GOPATH)
+// to paths
+func appendNonLocal(paths []string, deps ...string) []string {
+	for _, d := range deps {
+		if !strings.HasPrefix(d, "_/") {
+			paths = append(paths, d)
+		}
+	}
+	return paths
 }
