@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,7 +18,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [packages]",
+	Usage: "save [-r] [-v] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 Save writes a list of the dependencies of the named packages along
@@ -48,19 +49,23 @@ If -r is given, import statements will be rewritten to refer
 directly to the copied source code. This is not compatible with the
 vendor experiment.
 
+If -v is given, the verbosity will be increased
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
 }
 
 var (
-	saveCopy = true
-	saveR    = false
+	saveCopy    = true
+	saveR       = false
+	saveVerbose = true
 )
 
 func init() {
 	cmdSave.Flag.BoolVar(&saveCopy, "copy", true, "copy source code")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
+	cmdSave.Flag.BoolVar(&saveVerbose, "v", false, "verbose")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -97,6 +102,10 @@ func save(pkgs []string) error {
 		ImportPath: dot[0].ImportPath,
 		GoVersion:  ver,
 	}
+
+	printVerbose("import-path", gnew.ImportPath)
+	printVerbose("go-version", gnew.GoVersion)
+
 	if len(pkgs) > 0 {
 		gnew.Packages = pkgs
 	} else {
@@ -221,6 +230,7 @@ func carryVersion(a *Godeps, db *Dependency) error {
 	// First see if this exact package is already in the list.
 	for _, da := range a.Deps {
 		if db.ImportPath == da.ImportPath {
+			printVerbose("dependency", db.ImportPath, db.Rev, db.Comment)
 			db.Rev = da.Rev
 			db.Comment = da.Comment
 			return nil
@@ -242,6 +252,7 @@ func carryVersion(a *Godeps, db *Dependency) error {
 		}
 	}
 	// No related package in the list, must be a new repo.
+	printVerbose("new dependency", db.ImportPath, db.Rev, db.Comment)
 	return nil
 }
 
@@ -279,6 +290,7 @@ func copySrc(dir string, deps []Dependency) error {
 			return err
 		}
 		dstpkgroot := filepath.Join(dir, rel)
+		printVerbose("copy", dep.dir, "→", dstpkgroot)
 		err = os.RemoveAll(dstpkgroot)
 		if err != nil {
 			log.Println(err)
@@ -435,6 +447,13 @@ func writeFile(name, body string) error {
 		return err
 	}
 	return ioutil.WriteFile(name, []byte(body), 0666)
+}
+
+func printVerbose(args ...interface{}) {
+	if saveVerbose {
+		args[0] = "\033[1m" + fmt.Sprintf("%s", args[0]) + "\033[0m:\t"
+		fmt.Println(args...)
+	}
 }
 
 const (
