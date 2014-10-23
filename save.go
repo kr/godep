@@ -14,7 +14,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [packages]",
+	Usage: "save [-r] [-p] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 Save writes a list of the dependencies of the named packages along
@@ -43,6 +43,9 @@ To update a dependency to a newer revision, use 'godep update'.
 If -r is given, import statements will be rewritten to refer
 directly to the copied source code.
 
+If -p is given, godep will ask user confirmation before adding
+a package into dependency list
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
@@ -51,11 +54,13 @@ For more about specifying packages, see 'go help packages'.
 var (
 	saveCopy = true
 	saveR    = false
+	saveP    = false
 )
 
 func init() {
 	cmdSave.Flag.BoolVar(&saveCopy, "copy", true, "copy source code")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
+	cmdSave.Flag.BoolVar(&saveP, "p", false, "interactive mode")
 }
 
 func runSave(cmd *Command, args []string) {
