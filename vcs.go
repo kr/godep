@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"code.google.com/p/go.tools/go/vcs"
+	"github.com/chai2010/godep/internal/vcs"
 )
 
 type VCS struct {
