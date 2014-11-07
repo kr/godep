@@ -11,7 +11,7 @@ import (
 	"go/printer"
 	"go/token"
 
-	"github.com/kr/fs"
+	"github.com/chai2010/godep/internal/fs"
 )
 
 // rewrite visits the go files in pkgs, plus all go files

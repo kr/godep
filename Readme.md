@@ -9,7 +9,7 @@ that works with Go 1 or newer.
 
 ### Install
 
-	$ go get github.com/tools/godep
+	$ go get github.com/chai2010/godep
 
 #### Getting Started
 

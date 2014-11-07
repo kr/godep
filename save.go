@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kr/fs"
+	"github.com/chai2010/godep/internal/fs"
 )
 
 var cmdSave = &Command{
@@ -370,7 +370,7 @@ This directory tree is generated automatically by godep.
 
 Please do not edit.
 
-See https://github.com/tools/godep for more information.
+See https://github.com/chai2010/godep for more information.
 `
 	needRestore = `
 mismatched versions while migrating

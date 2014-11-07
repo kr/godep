@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"code.google.com/p/go.tools/go/vcs"
+	"github.com/chai2010/godep/internal/vcs"
 )
 
 // Godeps describes what a package needs to be rebuilt reproducibly.
@@ -62,6 +62,14 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
+
+		// current project: avoid version control check error
+		if strings.HasPrefix(p.ImportPath, g.ImportPath) {
+			seen = append(seen, p.ImportPath)
+			path = append(path, p.Deps...)
+			continue
+		}
+
 		_, reporoot, err := VCSFromDir(p.Dir, filepath.Join(p.Root, "src"))
 		if err != nil {
 			log.Println(err)
@@ -110,6 +118,13 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		if pkg.Standard {
 			continue
 		}
+
+		// current project: avoid version control check error
+		if strings.HasPrefix(pkg.ImportPath, g.ImportPath) {
+			seen = append(seen, pkg.ImportPath)
+			continue
+		}
+
 		vcs, reporoot, err := VCSFromDir(pkg.Dir, filepath.Join(pkg.Root, "src"))
 		if err != nil {
 			log.Println(err)
