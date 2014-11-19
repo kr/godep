@@ -344,7 +344,7 @@ func copyFile(dst, src string) error {
 // It logs any errors it encounters.
 func writeVCSIgnore(dir string) {
 	// Currently git is the only VCS for which we know how to do this.
-	// Mercurial and Bazaar have similar mechasims, but they apparently
+	// Mercurial and Bazaar have similar mechanisms, but they apparently
 	// require writing files outside of dir.
 	const ignore = "/pkg\n/bin\n"
 	name := filepath.Join(dir, ".gitignore")
