@@ -32,6 +32,9 @@ type Command struct {
 	Flag flag.FlagSet
 }
 
+var pass = flag.Bool("pass", false, "pass through to go if no godeps found")
+var silent = flag.Bool("silent", false, "silence godep specific output")
+
 func (c *Command) Name() string {
 	name := c.Usage
 	i := strings.Index(name, " ")
@@ -78,6 +81,9 @@ func main() {
 		if cmd.Name() == args[0] {
 			cmd.Flag.Usage = func() { cmd.UsageExit() }
 			cmd.Flag.Parse(args[1:])
+			if !*silent {
+				fmt.Println(cmd.Flag.Args())
+			}
 			cmd.Run(cmd, cmd.Flag.Args())
 			return
 		}
@@ -93,13 +99,16 @@ Godep is a tool for managing Go package dependencies.
 
 Usage:
 
-	godep command [arguments]
+	godep [-pass] [-silent] command [arguments]
 
 The commands are:
 {{range .}}
     {{.Name | printf "%-8s"}} {{.Short}}{{end}}
 
 Use "godep help [command]" for more information about a command.
+
+If -pass is given, the underlying calls to "go" are invoked normally if godeps is not found.
+If -silent is given, godep specific output is silenced, causing it to behave as if "go" was called directly.
 `
 
 var helpTemplate = `
