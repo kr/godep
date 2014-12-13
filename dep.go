@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"golang.org/x/tools/go/vcs"
+	"github.com/golang/tools/go/vcs"
 )
 
 // Godeps describes what a package needs to be rebuilt reproducibly.
