@@ -194,6 +194,12 @@ func (v *VCS) run1(dir string, cmdline string, kv []string, verbose bool) ([]byt
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
+	cmd.Env = make([]string, 0)
+	for _, kv := range os.Environ() {
+		if !strings.HasPrefix(kv, "GIT_") {
+			cmd.Env = append(cmd.Env, kv)
+		}
+	}
 	err = cmd.Run()
 	out := buf.Bytes()
 	if err != nil {
