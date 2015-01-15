@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
+	"regexp"
 	"strings"
 
 	"github.com/kr/fs"
@@ -22,6 +25,9 @@ Save writes a list of the named packages and their dependencies along
 with the exact source control revision of each package, and copies
 their source code into a subdirectory. Packages inside . are excluded
 from the list to be copied.
+
+The list is written to Godeps/Godeps.json, and source code for all
+dependencies is copied into Godeps/_workspace.
 
 The dependency list is a JSON document with the following structure:
 
@@ -63,6 +69,10 @@ func init() {
 }
 
 func runSave(cmd *Command, args []string) {
+	if !saveCopy {
+		log.Println("flag unsupported: -copy=false")
+		cmd.UsageExit()
+	}
 	err := save(args)
 	if err != nil {
 		log.Fatalln(err)
@@ -78,13 +88,10 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	manifest := "Godeps"
-	if saveCopy {
-		manifest = filepath.Join("Godeps", "Godeps.json")
-	}
+	manifest := filepath.Join("Godeps", "Godeps.json")
 	var gold Godeps
-	err = ReadGodeps(manifest, &gold)
-	if err != nil && !os.IsNotExist(err) {
+	oldIsFile, err := readOldGodeps(&gold)
+	if err != nil {
 		return err
 	}
 	gnew := &Godeps{
@@ -104,25 +111,29 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	if a := badSandboxVCS(gnew.Deps); a != nil && !saveCopy {
-		log.Println("Unsupported sandbox VCS:", strings.Join(a, ", "))
-		log.Printf("Instead, run: godep save -copy %s", strings.Join(pkgs, " "))
-		return errors.New("error")
-	}
 	if gnew.Deps == nil {
 		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
+	gdisk := copyGodeps(gnew)
 	err = carryVersions(&gold, gnew)
 	if err != nil {
 		return err
 	}
-	if saveCopy {
-		os.Remove("Godeps") // remove regular file if present; ignore error
-		path := filepath.Join("Godeps", "Readme")
-		err = writeFile(path, strings.TrimSpace(Readme)+"\n")
-		if err != nil {
-			log.Println(err)
+	if oldIsFile {
+		// If we are migrating from an old format file,
+		// we require that the listed version of every
+		// dependency must be installed in GOPATH, so it's
+		// available to copy.
+		if !eqDeps(gnew.Deps, gdisk.Deps) {
+			return errors.New(strings.TrimSpace(needRestore))
 		}
+		gold = Godeps{}
+	}
+	os.Remove("Godeps") // remove regular file if present; ignore error
+	readme := filepath.Join("Godeps", "Readme")
+	err = writeFile(readme, strings.TrimSpace(Readme)+"\n")
+	if err != nil {
+		log.Println(err)
 	}
 	f, err := os.Create(manifest)
 	if err != nil {
@@ -130,31 +141,30 @@ func save(pkgs []string) error {
 	}
 	_, err = gnew.WriteTo(f)
 	if err != nil {
+		f.Close()
 		return err
 	}
 	err = f.Close()
 	if err != nil {
 		return err
 	}
-	if saveCopy {
-		// We use a name starting with "_" so the go tool
-		// ignores this directory when traversing packages
-		// starting at the project's root. For example,
-		//   godep go list ./...
-		workspace := filepath.Join("Godeps", "_workspace")
-		srcdir := filepath.Join(workspace, "src")
-		rem := subDeps(gold.Deps, gnew.Deps)
-		add := subDeps(gnew.Deps, gold.Deps)
-		err = removeSrc(srcdir, rem)
-		if err != nil {
-			return err
-		}
-		err = copySrc(srcdir, add)
-		if err != nil {
-			return err
-		}
-		writeVCSIgnore(workspace)
+	// We use a name starting with "_" so the go tool
+	// ignores this directory when traversing packages
+	// starting at the project's root. For example,
+	//   godep go list ./...
+	workspace := filepath.Join("Godeps", "_workspace")
+	srcdir := filepath.Join(workspace, "src")
+	rem := subDeps(gold.Deps, gnew.Deps)
+	add := subDeps(gnew.Deps, gold.Deps)
+	err = removeSrc(srcdir, rem)
+	if err != nil {
+		return err
 	}
+	err = copySrc(srcdir, add)
+	if err != nil {
+		return err
+	}
+	writeVCSIgnore(workspace)
 	var rewritePaths []string
 	if saveR {
 		for _, dep := range gnew.Deps {
@@ -162,6 +172,23 @@ func save(pkgs []string) error {
 		}
 	}
 	return rewrite(a, dot[0].ImportPath, rewritePaths)
+}
+
+func readOldGodeps(g *Godeps) (isFile bool, err error) {
+	f, err := os.Open(filepath.Join("Godeps", "Godeps.json"))
+	if err != nil {
+		isFile = true
+		f, err = os.Open("Godeps")
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	err = json.NewDecoder(f).Decode(g)
+	f.Close()
+	return isFile, err
 }
 
 type revError struct {
@@ -231,18 +258,6 @@ Diff:
 	return diff
 }
 
-// badSandboxVCS returns a list of VCSes that don't work
-// with the `godep go` sandbox code.
-func badSandboxVCS(deps []Dependency) (a []string) {
-	for _, d := range deps {
-		if d.vcs.CreateCmd == "" {
-			a = append(a, d.vcs.vcs.Name)
-		}
-	}
-	sort.Strings(a)
-	return uniq(a)
-}
-
 func removeSrc(srcdir string, deps []Dependency) error {
 	for _, dep := range deps {
 		path := filepath.FromSlash(dep.ImportPath)
@@ -305,6 +320,11 @@ func copyPkgFile(dstroot, srcroot string, w *fs.Walker) error {
 
 // copyFile copies a regular file from src to dst.
 // dst is opened with os.Create.
+// If the file name ends with .go,
+// copyFile strips canonical import path annotations.
+// These are comments of the form:
+//   package foo // import "bar/foo"
+//   package foo /* import "bar/foo" */
 func copyFile(dst, src string) error {
 	err := os.MkdirAll(filepath.Dir(dst), 0777)
 	if err != nil {
@@ -327,13 +347,54 @@ func copyFile(dst, src string) error {
 		return err
 	}
 
-	_, err = io.Copy(w, r)
+	if strings.HasSuffix(dst, ".go") {
+		err = copyWithoutImportComment(w, r)
+	} else {
+		_, err = io.Copy(w, r)
+	}
 	err1 := w.Close()
 	if err == nil {
 		err = err1
 	}
 
 	return err
+}
+
+func copyWithoutImportComment(w io.Writer, r io.Reader) error {
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		_, err := w.Write(append(stripImportComment(sc.Bytes()), '\n'))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+const (
+	importAnnotation = `import\s+(?:"[^"]*"|` + "`[^`]*`" + `)`
+	importComment    = `(?://\s*` + importAnnotation + `\s*$|/\*\s*` + importAnnotation + `\s*\*/)`
+)
+
+var (
+	importCommentRE = regexp.MustCompile(`^\s*(package\s+\w+)\s+` + importComment + `(.*)`)
+	pkgPrefix       = []byte("package ")
+)
+
+// stripImportComment returns line with its import comment removed.
+// If s is not a package statement containing an import comment,
+// it is returned unaltered.
+// See also http://golang.org/s/go14customimport.
+func stripImportComment(line []byte) []byte {
+	if !bytes.HasPrefix(line, pkgPrefix) {
+		// Fast path; this will skip all but one line in the file.
+		// This assumes there is no whitespace before the keyword.
+		return line
+	}
+	if m := importCommentRE.FindSubmatch(line); m != nil {
+		return append(m[1], m[2]...)
+	}
+	return line
 }
 
 // Func writeVCSIgnore writes "ignore" files inside dir for known VCSs,
@@ -361,10 +422,23 @@ func writeFile(name, body string) error {
 	return ioutil.WriteFile(name, []byte(body), 0666)
 }
 
-const Readme = `
+const (
+	Readme = `
 This directory tree is generated automatically by godep.
 
 Please do not edit.
 
 See https://github.com/tools/godep for more information.
 `
+	needRestore = `
+mismatched versions while migrating
+
+It looks like you are switching from the old Godeps format
+(from flag -copy=false). The old format is just a file; it
+doesn't contain source code. For this migration, godep needs
+the appropriate version of each dependency to be installed in
+GOPATH, so that the source code is available to copy.
+
+To fix this, run 'godep restore'.
+`
+)

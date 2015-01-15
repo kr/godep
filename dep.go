@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"code.google.com/p/go.tools/go/vcs"
+	"golang.org/x/tools/go/vcs"
 )
 
 // Godeps describes what a package needs to be rebuilt reproducibly.
@@ -143,6 +143,25 @@ func ReadGodeps(path string, g *Godeps) error {
 		return err
 	}
 	return json.NewDecoder(f).Decode(g)
+}
+
+func copyGodeps(g *Godeps) *Godeps {
+	h := *g
+	h.Deps = make([]Dependency, len(g.Deps))
+	copy(h.Deps, g.Deps)
+	return &h
+}
+
+func eqDeps(a, b []Dependency) bool {
+	ok := true
+	for _, da := range a {
+		for _, db := range b {
+			if da.ImportPath == db.ImportPath && da.Rev != db.Rev {
+				ok = false
+			}
+		}
+	}
+	return ok
 }
 
 func ReadAndLoadGodeps(path string) (*Godeps, error) {
