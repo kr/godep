@@ -74,9 +74,9 @@ func runGet(cmd *Command, args []string) {
 	}
 
 	// Phase 1.  Download/update.
-	var stk importStack
+	var stk ImportStack
 	for _, arg := range downloadPaths(args) {
-		download(arg, &stk, *getT)
+		Download(arg, &stk, *getT)
 	}
 	exitIfErrors()
 
@@ -148,7 +148,7 @@ var downloadRootCache = map[string]bool{}
 
 // download runs the download half of the get command
 // for the package named by the argument.
-func download(arg string, stk *importStack, getTestDeps bool) {
+func Download(arg string, stk *ImportStack, getTestDeps bool) {
 	p := loadPackage(arg, stk)
 	if p.Error != nil && p.Error.hard {
 		errorf("%s", p.Error)
@@ -242,16 +242,16 @@ func download(arg string, stk *importStack, getTestDeps bool) {
 		// Process dependencies, now that we know what they are.
 		for _, dep := range p.deps {
 			// Don't get test dependencies recursively.
-			download(dep.ImportPath, stk, false)
+			Download(dep.ImportPath, stk, false)
 		}
 		if getTestDeps {
 			// Process test dependencies when -t is specified.
 			// (Don't get test dependencies for test dependencies.)
 			for _, path := range p.TestImports {
-				download(path, stk, false)
+				Download(path, stk, false)
 			}
 			for _, path := range p.XTestImports {
-				download(path, stk, false)
+				Download(path, stk, false)
 			}
 		}
 
@@ -265,7 +265,7 @@ func download(arg string, stk *importStack, getTestDeps bool) {
 // to make the first copy of or update a copy of the given package.
 func downloadPackage(p *Package) error {
 	var (
-		vcs            *VcsCmd
+		vcs            *vcsCmd
 		repo, rootPath string
 		err            error
 	)
@@ -281,8 +281,8 @@ func downloadPackage(p *Package) error {
 		if *getU && vcs.remoteRepo != nil && !*getF {
 			dir := filepath.Join(p.build.SrcRoot, rootPath)
 			if remote, err := vcs.remoteRepo(vcs, dir); err == nil {
-				if rr, err := repoRootForImportPath(p.ImportPath); err == nil {
-					repo := rr.repo
+				if rr, err := RepoRootForImportPath(p.ImportPath); err == nil {
+					repo := rr.Repo
 					if rr.vcs.resolveRepo != nil {
 						resolved, err := rr.vcs.resolveRepo(rr.vcs, dir, repo)
 						if err == nil {
@@ -290,7 +290,7 @@ func downloadPackage(p *Package) error {
 						}
 					}
 					if remote != repo {
-						return fmt.Errorf("%s is a custom import path for %s, but %s is checked out from %s", rr.root, repo, dir, remote)
+						return fmt.Errorf("%s is a custom import path for %s, but %s is checked out from %s", rr.Root, repo, dir, remote)
 					}
 				}
 			}
@@ -298,11 +298,11 @@ func downloadPackage(p *Package) error {
 	} else {
 		// Analyze the import path to determine the version control system,
 		// repository, and the import path for the root of the repository.
-		rr, err := repoRootForImportPath(p.ImportPath)
+		rr, err := RepoRootForImportPath(p.ImportPath)
 		if err != nil {
 			return err
 		}
-		vcs, repo, rootPath = rr.vcs, rr.repo, rr.root
+		vcs, repo, rootPath = rr.vcs, rr.Repo, rr.Root
 	}
 
 	if p.build.SrcRoot == "" {

@@ -21,13 +21,13 @@ func TestRepoRootForImportPath(t *testing.T) {
 	}
 	tests := []struct {
 		path string
-		want *repoRoot
+		want *RepoRoot
 	}{
 		{
 			"code.google.com/p/go",
-			&repoRoot{
+			&RepoRoot{
 				vcs:  vcsHg,
-				repo: "https://code.google.com/p/go",
+				Repo: "https://code.google.com/p/go",
 			},
 		},
 		/*{
@@ -39,24 +39,24 @@ func TestRepoRootForImportPath(t *testing.T) {
 		},*/
 		{
 			"github.com/golang/groupcache",
-			&repoRoot{
+			&RepoRoot{
 				vcs:  vcsGit,
-				repo: "https://github.com/golang/groupcache",
+				Repo: "https://github.com/golang/groupcache",
 			},
 		},
 		// IBM DevOps Services tests
 		{
 			"hub.jazz.net/git/user1/pkgname",
-			&repoRoot{
+			&RepoRoot{
 				vcs:  vcsGit,
-				repo: "https://hub.jazz.net/git/user1/pkgname",
+				Repo: "https://hub.jazz.net/git/user1/pkgname",
 			},
 		},
 		{
 			"hub.jazz.net/git/user1/pkgname/submodule/submodule/submodule",
-			&repoRoot{
+			&RepoRoot{
 				vcs:  vcsGit,
-				repo: "https://hub.jazz.net/git/user1/pkgname",
+				Repo: "https://hub.jazz.net/git/user1/pkgname",
 			},
 		},
 		{
@@ -91,9 +91,9 @@ func TestRepoRootForImportPath(t *testing.T) {
 		},
 		{
 			"hub.jazz.net/git/user/pkg.name",
-			&repoRoot{
+			&RepoRoot{
 				vcs:  vcsGit,
-				repo: "https://hub.jazz.net/git/user/pkg.name",
+				Repo: "https://hub.jazz.net/git/user/pkg.name",
 			},
 		},
 		// User names cannot have uppercase letters
@@ -104,7 +104,7 @@ func TestRepoRootForImportPath(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got, err := repoRootForImportPath(test.path)
+		got, err := RepoRootForImportPath(test.path)
 		want := test.want
 
 		if want == nil {
@@ -117,8 +117,8 @@ func TestRepoRootForImportPath(t *testing.T) {
 			t.Errorf("RepoRootForImport(%q): %v", test.path, err)
 			continue
 		}
-		if got.vcs.name != want.vcs.name || got.repo != want.repo {
-			t.Errorf("RepoRootForImport(%q) = VCS(%s) Repo(%s), want VCS(%s) Repo(%s)", test.path, got.vcs, got.repo, want.vcs, want.repo)
+		if got.vcs.name != want.vcs.name || got.Repo != want.Repo {
+			t.Errorf("RepoRootForImport(%q) = VCS(%s) Repo(%s), want VCS(%s) Repo(%s)", test.path, got.vcs, got.Repo, want.vcs, want.Repo)
 		}
 	}
 }

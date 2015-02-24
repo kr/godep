@@ -557,7 +557,7 @@ func (b *builder) test(p *Package) (buildAction, runAction, printAction *action,
 	var ptest, pxtest, pmain *Package
 
 	var imports, ximports []*Package
-	var stk importStack
+	var stk ImportStack
 	stk.push(p.ImportPath + " (test)")
 	for _, path := range p.TestImports {
 		p1 := loadImport(path, p.Dir, &stk, p.build.TestImportPos[path])

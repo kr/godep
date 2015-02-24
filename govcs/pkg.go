@@ -162,24 +162,24 @@ func (p *PackageError) Error() string {
 }
 
 // An importStack is a stack of import paths.
-type importStack []string
+type ImportStack []string
 
-func (s *importStack) push(p string) {
+func (s *ImportStack) push(p string) {
 	*s = append(*s, p)
 }
 
-func (s *importStack) pop() {
+func (s *ImportStack) pop() {
 	*s = (*s)[0 : len(*s)-1]
 }
 
-func (s *importStack) copy() []string {
+func (s *ImportStack) copy() []string {
 	return append([]string{}, *s...)
 }
 
 // shorterThan returns true if sp is shorter than t.
 // We use this to record the shortest import sequence
 // that leads to a particular package.
-func (sp *importStack) shorterThan(t []string) bool {
+func (sp *ImportStack) shorterThan(t []string) bool {
 	s := *sp
 	if len(s) != len(t) {
 		return len(s) < len(t)
@@ -200,7 +200,7 @@ var packageCache = map[string]*Package{}
 
 // reloadPackage is like loadPackage but makes sure
 // not to use the package cache.
-func reloadPackage(arg string, stk *importStack) *Package {
+func reloadPackage(arg string, stk *ImportStack) *Package {
 	p := packageCache[arg]
 	if p != nil {
 		delete(packageCache, p.Dir)
@@ -233,7 +233,7 @@ func makeImportValid(r rune) rune {
 // but possibly a local import path (an absolute file system path or one beginning
 // with ./ or ../).  A local relative path is interpreted relative to srcDir.
 // It returns a *Package describing the package found in that directory.
-func loadImport(path string, srcDir string, stk *importStack, importPos []token.Position) *Package {
+func loadImport(path string, srcDir string, stk *ImportStack, importPos []token.Position) *Package {
 	stk.push(path)
 	defer stk.pop()
 
@@ -289,7 +289,7 @@ func loadImport(path string, srcDir string, stk *importStack, importPos []token.
 // reusePackage reuses package p to satisfy the import at the top
 // of the import stack stk.  If this use causes an import loop,
 // reusePackage updates p's error information to record the loop.
-func reusePackage(p *Package, stk *importStack) *Package {
+func reusePackage(p *Package, stk *ImportStack) *Package {
 	// We use p.imports==nil to detect a package that
 	// is in the midst of its own loadPackage call
 	// (all the recursion below happens before p.imports gets set).
@@ -314,7 +314,7 @@ func reusePackage(p *Package, stk *importStack) *Package {
 // disallowInternal checks that srcDir is allowed to import p.
 // If the import is allowed, disallowInternal returns the original package p.
 // If not, it returns a new package containing just an appropriate error.
-func disallowInternal(srcDir string, p *Package, stk *importStack) *Package {
+func disallowInternal(srcDir string, p *Package, stk *ImportStack) *Package {
 	// golang.org/s/go14internal:
 	// An import of a path containing the element “internal”
 	// is disallowed if the importing code is outside the tree
@@ -449,7 +449,7 @@ var cgoSyscallExclude = map[string]bool{
 
 // load populates p using information from bp, err, which should
 // be the result of calling build.Context.Import.
-func (p *Package) load(stk *importStack, bp *build.Package, err error) *Package {
+func (p *Package) load(stk *ImportStack, bp *build.Package, err error) *Package {
 	p.copyBuild(bp)
 
 	// The localPrefix is the path we interpret ./ imports relative to.
@@ -810,7 +810,7 @@ var cmdCache = map[string]*Package{}
 // not for paths found in import statements.  In addition to ordinary import paths,
 // loadPackage accepts pseudo-paths beginning with cmd/ to denote commands
 // in the Go command directory, as well as paths to those directories.
-func loadPackage(arg string, stk *importStack) *Package {
+func loadPackage(arg string, stk *ImportStack) *Package {
 	if build.IsLocalImport(arg) {
 		dir := arg
 		if !filepath.IsAbs(dir) {
@@ -898,7 +898,7 @@ func packagesAndErrors(args []string) []*Package {
 
 	args = importPaths(args)
 	var pkgs []*Package
-	var stk importStack
+	var stk ImportStack
 	var set = make(map[string]bool)
 
 	for _, arg := range args {

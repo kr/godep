@@ -19,7 +19,7 @@ import (
 
 // A vcsCmd describes how to use a version control system
 // like Mercurial, Git, or Subversion.
-type VcsCmd struct {
+type vcsCmd struct {
 	name string
 	cmd  string // name of binary to invoke command
 
@@ -34,8 +34,8 @@ type VcsCmd struct {
 	scheme  []string
 	pingCmd string
 
-	remoteRepo  func(v *VcsCmd, rootDir string) (remoteRepo string, err error)
-	resolveRepo func(v *VcsCmd, rootDir, remoteRepo string) (realRepo string, err error)
+	remoteRepo  func(v *vcsCmd, rootDir string) (remoteRepo string, err error)
+	resolveRepo func(v *vcsCmd, rootDir, remoteRepo string) (realRepo string, err error)
 }
 
 // A tagCmd describes a command to list available tags
@@ -46,7 +46,7 @@ type tagCmd struct {
 }
 
 // vcsList lists the known version control systems
-var vcsList = []*VcsCmd{
+var vcsList = []*vcsCmd{
 	vcsHg,
 	vcsGit,
 	vcsSvn,
@@ -55,7 +55,7 @@ var vcsList = []*VcsCmd{
 
 // vcsByCmd returns the version control system for the given
 // command name (hg, git, svn, bzr).
-func vcsByCmd(cmd string) *VcsCmd {
+func vcsByCmd(cmd string) *vcsCmd {
 	for _, vcs := range vcsList {
 		if vcs.cmd == cmd {
 			return vcs
@@ -65,7 +65,7 @@ func vcsByCmd(cmd string) *VcsCmd {
 }
 
 // vcsHg describes how to use Mercurial.
-var vcsHg = &VcsCmd{
+var vcsHg = &vcsCmd{
 	name: "Mercurial",
 	cmd:  "hg",
 
@@ -89,7 +89,7 @@ var vcsHg = &VcsCmd{
 	remoteRepo: hgRemoteRepo,
 }
 
-func hgRemoteRepo(vcsHg *VcsCmd, rootDir string) (remoteRepo string, err error) {
+func hgRemoteRepo(vcsHg *vcsCmd, rootDir string) (remoteRepo string, err error) {
 	out, err := vcsHg.runOutput(rootDir, "paths default")
 	if err != nil {
 		return "", err
@@ -98,7 +98,7 @@ func hgRemoteRepo(vcsHg *VcsCmd, rootDir string) (remoteRepo string, err error) 
 }
 
 // vcsGit describes how to use Git.
-var vcsGit = &VcsCmd{
+var vcsGit = &vcsCmd{
 	name: "Git",
 	cmd:  "git",
 
@@ -121,7 +121,7 @@ var vcsGit = &VcsCmd{
 	remoteRepo: gitRemoteRepo,
 }
 
-func gitRemoteRepo(vcsGit *VcsCmd, rootDir string) (remoteRepo string, err error) {
+func gitRemoteRepo(vcsGit *vcsCmd, rootDir string) (remoteRepo string, err error) {
 	outb, err := vcsGit.runOutput(rootDir, "remote -v")
 	if err != nil {
 		return "", err
@@ -151,7 +151,7 @@ func gitRemoteRepo(vcsGit *VcsCmd, rootDir string) (remoteRepo string, err error
 }
 
 // vcsBzr describes how to use Bazaar.
-var vcsBzr = &VcsCmd{
+var vcsBzr = &vcsCmd{
 	name: "Bazaar",
 	cmd:  "bzr",
 
@@ -171,7 +171,7 @@ var vcsBzr = &VcsCmd{
 	resolveRepo: bzrResolveRepo,
 }
 
-func bzrRemoteRepo(vcsBzr *VcsCmd, rootDir string) (remoteRepo string, err error) {
+func bzrRemoteRepo(vcsBzr *vcsCmd, rootDir string) (remoteRepo string, err error) {
 	outb, err := vcsBzr.runOutput(rootDir, "config parent_location")
 	if err != nil {
 		return "", err
@@ -179,7 +179,7 @@ func bzrRemoteRepo(vcsBzr *VcsCmd, rootDir string) (remoteRepo string, err error
 	return strings.TrimSpace(string(outb)), nil
 }
 
-func bzrResolveRepo(vcsBzr *VcsCmd, rootDir, remoteRepo string) (realRepo string, err error) {
+func bzrResolveRepo(vcsBzr *vcsCmd, rootDir, remoteRepo string) (realRepo string, err error) {
 	outb, err := vcsBzr.runOutput(rootDir, "info "+remoteRepo)
 	if err != nil {
 		return "", err
@@ -213,7 +213,7 @@ func bzrResolveRepo(vcsBzr *VcsCmd, rootDir, remoteRepo string) (realRepo string
 }
 
 // vcsSvn describes how to use Subversion.
-var vcsSvn = &VcsCmd{
+var vcsSvn = &vcsCmd{
 	name: "Subversion",
 	cmd:  "svn",
 
@@ -228,7 +228,7 @@ var vcsSvn = &VcsCmd{
 	remoteRepo: svnRemoteRepo,
 }
 
-func svnRemoteRepo(vcsSvn *VcsCmd, rootDir string) (remoteRepo string, err error) {
+func svnRemoteRepo(vcsSvn *vcsCmd, rootDir string) (remoteRepo string, err error) {
 	outb, err := vcsSvn.runOutput(rootDir, "info")
 	if err != nil {
 		return "", err
@@ -253,7 +253,7 @@ func svnRemoteRepo(vcsSvn *VcsCmd, rootDir string) (remoteRepo string, err error
 	return strings.TrimSpace(string(out)), nil
 }
 
-func (v *VcsCmd) String() string {
+func (v *vcsCmd) String() string {
 	return v.name
 }
 
@@ -264,24 +264,24 @@ func (v *VcsCmd) String() string {
 // If an error occurs, run prints the command line and the
 // command's combined stdout+stderr to standard error.
 // Otherwise run discards the command's output.
-func (v *VcsCmd) run(dir string, cmd string, keyval ...string) error {
+func (v *vcsCmd) run(dir string, cmd string, keyval ...string) error {
 	_, err := v.run1(dir, cmd, keyval, true)
 	return err
 }
 
 // runVerboseOnly is like run but only generates error output to standard error in verbose mode.
-func (v *VcsCmd) runVerboseOnly(dir string, cmd string, keyval ...string) error {
+func (v *vcsCmd) runVerboseOnly(dir string, cmd string, keyval ...string) error {
 	_, err := v.run1(dir, cmd, keyval, false)
 	return err
 }
 
 // runOutput is like run but returns the output of the command.
-func (v *VcsCmd) runOutput(dir string, cmd string, keyval ...string) ([]byte, error) {
+func (v *vcsCmd) runOutput(dir string, cmd string, keyval ...string) ([]byte, error) {
 	return v.run1(dir, cmd, keyval, true)
 }
 
 // run1 is the generalized implementation of run and runOutput.
-func (v *VcsCmd) run1(dir string, cmdline string, keyval []string, verbose bool) ([]byte, error) {
+func (v *vcsCmd) run1(dir string, cmdline string, keyval []string, verbose bool) ([]byte, error) {
 	m := make(map[string]string)
 	for i := 0; i < len(keyval); i += 2 {
 		m[keyval[i]] = keyval[i+1]
@@ -322,18 +322,18 @@ func (v *VcsCmd) run1(dir string, cmdline string, keyval []string, verbose bool)
 }
 
 // ping pings to determine scheme to use.
-func (v *VcsCmd) ping(scheme, repo string) error {
+func (v *vcsCmd) ping(scheme, repo string) error {
 	return v.runVerboseOnly(".", v.pingCmd, "scheme", scheme, "repo", repo)
 }
 
 // create creates a new copy of repo in dir.
 // The parent of dir must exist; dir must not.
-func (v *VcsCmd) create(dir, repo string) error {
+func (v *vcsCmd) create(dir, repo string) error {
 	return v.run(".", v.createCmd, "dir", dir, "repo", repo)
 }
 
 // download downloads any new changes for the repo in dir.
-func (v *VcsCmd) download(dir string) error {
+func (v *vcsCmd) download(dir string) error {
 	if err := v.fixDetachedHead(dir); err != nil {
 		return err
 	}
@@ -348,7 +348,7 @@ func (v *VcsCmd) download(dir string) error {
 // a Git repository we check for being on a detached head and switch to the
 // real branch, almost always called "master".
 // TODO(dsymonds): Consider removing this for Go 1.3.
-func (v *VcsCmd) fixDetachedHead(dir string) error {
+func (v *vcsCmd) fixDetachedHead(dir string) error {
 	if v != vcsGit {
 		return nil
 	}
@@ -365,7 +365,7 @@ func (v *VcsCmd) fixDetachedHead(dir string) error {
 }
 
 // tags returns the list of available tags for the repo in dir.
-func (v *VcsCmd) tags(dir string) ([]string, error) {
+func (v *vcsCmd) tags(dir string) ([]string, error) {
 	var tags []string
 	for _, tc := range v.tagCmd {
 		out, err := v.runOutput(dir, tc.cmd)
@@ -382,7 +382,7 @@ func (v *VcsCmd) tags(dir string) ([]string, error) {
 
 // tagSync syncs the repo in dir to the named tag,
 // which either is a tag returned by tags or is v.tagDefault.
-func (v *VcsCmd) tagSync(dir, tag string) error {
+func (v *vcsCmd) tagSync(dir, tag string) error {
 	if v.tagSyncCmd == "" {
 		return nil
 	}
@@ -424,7 +424,7 @@ type vcsPath struct {
 // On return, root is the import path
 // corresponding to the root of the repository
 // (thus root is a prefix of importPath).
-func vcsForDir(p *Package) (vcs *VcsCmd, root string, err error) {
+func vcsForDir(p *Package) (vcs *vcsCmd, root string, err error) {
 	// Clean and double-check that dir is in (a subdirectory of) srcRoot.
 	dir := filepath.Clean(p.Dir)
 	srcRoot := filepath.Clean(p.build.SrcRoot)
@@ -454,22 +454,22 @@ func vcsForDir(p *Package) (vcs *VcsCmd, root string, err error) {
 
 // repoRoot represents a version control system, a repo, and a root of
 // where to put it on disk.
-type repoRoot struct {
-	vcs *VcsCmd
+type RepoRoot struct {
+	vcs *vcsCmd
 
 	// repo is the repository URL, including scheme
-	repo string
+	Repo string
 
 	// root is the import path corresponding to the root of the
 	// repository
-	root string
+	Root string
 }
 
 var httpPrefixRE = regexp.MustCompile(`^https?:`)
 
 // repoRootForImportPath analyzes importPath to determine the
 // version control system, and code repository to use.
-func repoRootForImportPath(importPath string) (*repoRoot, error) {
+func RepoRootForImportPath(importPath string) (*RepoRoot, error) {
 	rr, err := repoRootForImportPathStatic(importPath, "")
 	if err == errUnknownSite {
 		// If there are wildcards, look up the thing before the wildcard,
@@ -493,7 +493,7 @@ func repoRootForImportPath(importPath string) (*repoRoot, error) {
 		}
 	}
 
-	if err == nil && strings.Contains(importPath, "...") && strings.Contains(rr.root, "...") {
+	if err == nil && strings.Contains(importPath, "...") && strings.Contains(rr.Root, "...") {
 		// Do not allow wildcards in the repo root.
 		rr = nil
 		err = fmt.Errorf("cannot expand ... in %q", importPath)
@@ -509,7 +509,7 @@ var errUnknownSite = errors.New("dynamic lookup required to find mapping")
 // containing its VCS type (foo.com/repo.git/dir)
 //
 // If scheme is non-empty, that scheme is forced.
-func repoRootForImportPathStatic(importPath, scheme string) (*repoRoot, error) {
+func repoRootForImportPathStatic(importPath, scheme string) (*RepoRoot, error) {
 	// A common error is to use https://packagepath because that's what
 	// hg and git require. Diagnose this helpfully.
 	if loc := httpPrefixRE.FindStringIndex(importPath); loc != nil {
@@ -566,10 +566,10 @@ func repoRootForImportPathStatic(importPath, scheme string) (*repoRoot, error) {
 				}
 			}
 		}
-		rr := &repoRoot{
+		rr := &RepoRoot{
 			vcs:  vcs,
-			repo: match["repo"],
-			root: match["root"],
+			Repo: match["repo"],
+			Root: match["root"],
 		}
 		return rr, nil
 	}
@@ -580,7 +580,7 @@ func repoRootForImportPathStatic(importPath, scheme string) (*repoRoot, error) {
 // statically known by repoRootForImportPathStatic.
 //
 // This handles "vanity import paths" like "name.tld/pkg/foo".
-func repoRootForImportDynamic(importPath string) (*repoRoot, error) {
+func repoRootForImportDynamic(importPath string) (*RepoRoot, error) {
 	slash := strings.Index(importPath, "/")
 	if slash < 0 {
 		return nil, errors.New("import path does not contain a slash")
@@ -639,10 +639,10 @@ func repoRootForImportDynamic(importPath string) (*repoRoot, error) {
 	if !strings.Contains(metaImport.RepoRoot, "://") {
 		return nil, fmt.Errorf("%s: invalid repo root %q; no scheme", urlStr, metaImport.RepoRoot)
 	}
-	rr := &repoRoot{
+	rr := &RepoRoot{
 		vcs:  vcsByCmd(metaImport.VCS),
-		repo: metaImport.RepoRoot,
-		root: metaImport.Prefix,
+		Repo: metaImport.RepoRoot,
+		Root: metaImport.Prefix,
 	}
 	if rr.vcs == nil {
 		return nil, fmt.Errorf("%s: unknown vcs %q", urlStr, metaImport.VCS)

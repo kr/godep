@@ -478,7 +478,7 @@ func goFilesPackage(gofiles []string) *Package {
 		}
 	}
 
-	var stk importStack
+	var stk ImportStack
 	ctxt := buildContext
 	ctxt.UseAllFiles = true
 
@@ -572,7 +572,7 @@ func (b *builder) action(mode buildMode, depMode buildMode, p *Package) *action 
 	// are writing is not the cgo we need to use.
 	if goos == runtime.GOOS && goarch == runtime.GOARCH && !buildRace {
 		if len(p.CgoFiles) > 0 || p.Standard && p.ImportPath == "runtime/cgo" {
-			var stk importStack
+			var stk ImportStack
 			p1 := loadPackage("cmd/cgo", &stk)
 			if p1.Error != nil {
 				fatalf("load cmd/cgo: %v", p1.Error)

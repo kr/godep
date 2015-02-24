@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/tools/godep/govcs"
 )
 
 var cmdRestore = &Command{
@@ -37,15 +39,19 @@ func runRestore(cmd *Command, args []string) {
 // the given revision.
 func restore(dep Dependency) error {
 	// make sure pkg exists somewhere in GOPATH
-	err := runIn(".", "go", "get", "-d", dep.ImportPath)
-	if err != nil {
-		return err
-	}
-	ps, err := LoadPackages(dep.ImportPath)
+	rr, err := govcs.RepoRootForImportPath(dep.ImportPath)
+	var stk govcs.ImportStack
+	govcs.Download(rr.Root, &stk, false)
+	// err := runIn(".", "go", "get", "-d", dep.ImportPath)
+	// if err != nil {
+	// 	return err
+	// }
+	ps, err := LoadPackages(rr.Root)
 	if err != nil {
 		return err
 	}
 	pkg := ps[0]
+	// log.Println("pkg", ps[0])
 	if !dep.vcs.exists(pkg.Dir, dep.Rev) {
 		dep.vcs.vcs.Download(pkg.Dir)
 	}
