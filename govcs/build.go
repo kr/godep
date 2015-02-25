@@ -186,11 +186,6 @@ func addBuildFlags(cmd *Command) {
 	cmd.Flag.BoolVar(&buildRace, "race", false, "")
 }
 
-func addBuildFlagsNX(cmd *Command) {
-	cmd.Flag.BoolVar(&buildN, "n", false, "")
-	cmd.Flag.BoolVar(&buildX, "x", false, "")
-}
-
 func isSpaceByte(c byte) bool {
 	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }

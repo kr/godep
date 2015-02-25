@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -18,7 +17,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"text/template"
 	"unicode"
 	"unicode/utf8"
 )
@@ -79,24 +77,6 @@ func setExitStatus(n int) {
 		exitStatus = n
 	}
 	exitMu.Unlock()
-}
-
-// tmpl executes the given template text on data, writing the result to w.
-func tmpl(w io.Writer, text string, data interface{}) {
-	t := template.New("top")
-	t.Funcs(template.FuncMap{"trim": strings.TrimSpace, "capitalize": capitalize})
-	template.Must(t.Parse(text))
-	if err := t.Execute(w, data); err != nil {
-		panic(err)
-	}
-}
-
-func capitalize(s string) string {
-	if s == "" {
-		return s
-	}
-	r, n := utf8.DecodeRuneInString(s)
-	return string(unicode.ToTitle(r)) + s[n:]
 }
 
 // importPathsNoDotExpansion returns the import paths to use for the given

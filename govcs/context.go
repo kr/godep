@@ -4,9 +4,7 @@
 
 package govcs
 
-import (
-	"go/build"
-)
+import ()
 
 type Context struct {
 	GOARCH        string   `json:",omitempty"` // target architecture
@@ -19,18 +17,4 @@ type Context struct {
 	BuildTags     []string `json:",omitempty"` // build constraints to match in +build lines
 	ReleaseTags   []string `json:",omitempty"` // releases the current release is compatible with
 	InstallSuffix string   `json:",omitempty"` // suffix to use in the name of the install dir
-}
-
-func newContext(c *build.Context) *Context {
-	return &Context{
-		GOARCH:        c.GOARCH,
-		GOOS:          c.GOOS,
-		GOROOT:        c.GOROOT,
-		CgoEnabled:    c.CgoEnabled,
-		UseAllFiles:   c.UseAllFiles,
-		Compiler:      c.Compiler,
-		BuildTags:     c.BuildTags,
-		ReleaseTags:   c.ReleaseTags,
-		InstallSuffix: c.InstallSuffix,
-	}
 }
