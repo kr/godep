@@ -301,6 +301,38 @@ func copyPkgFile(dstroot, srcroot string, w *fs.Walker) error {
 		// See $GOROOT/src/cmd/go/main.go:/matchPackagesInFs
 		w.SkipDir()
 	}
+
+	// follow symlinks one level deep
+	if w.Stat().Mode()&os.ModeSymlink == os.ModeSymlink {
+		fis, err := ioutil.ReadDir(w.Path())
+		if err != nil {
+			log.Println(err)
+		}
+
+		for _, fi := range fis {
+			// breaking the following checks up for readability
+			if filepath.Base(w.Path()) == fi.Name() {
+				continue
+			}
+
+			if !fi.Mode().IsRegular() {
+				continue
+			}
+
+			if c := fi.Name()[0]; c == '.' || c == '_' {
+				continue
+			}
+
+			if rel, err := filepath.Rel(srcroot, filepath.Join(w.Path(), fi.Name())); err == nil {
+				err = copyFile(filepath.Join(dstroot, rel), filepath.Join(w.Path(), fi.Name()))
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
+		return err
+	}
+
 	if w.Stat().IsDir() {
 		return nil
 	}
