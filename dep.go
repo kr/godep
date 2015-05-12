@@ -55,12 +55,8 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		_, reporoot, err := VCSFromDir(p.Dir, filepath.Join(p.Root, "src"))
-		if err != nil {
-			log.Println(err)
-			err1 = errors.New("error loading packages")
-			continue
-		}
+		_, reporoot, _ := VCSFromDir(p.Dir, filepath.Join(p.Root, "src"))
+
 		seen = append(seen, filepath.ToSlash(reporoot))
 		path = append(path, p.Deps...)
 	}
@@ -77,11 +73,6 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		if p.Standard {
 			continue
 		}
-		if p.Error.Err != "" {
-			log.Println(p.Error.Err)
-			err1 = errors.New("error loading packages")
-			continue
-		}
 		path = append(path, p.ImportPath)
 		path = append(path, p.Deps...)
 	}
@@ -95,24 +86,20 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		return err
 	}
 	for _, pkg := range ps {
-		if pkg.Error.Err != "" {
-			log.Println(pkg.Error.Err)
-			err1 = errors.New("error loading dependencies")
-			continue
-		}
 		if pkg.Standard {
 			continue
 		}
 		vcs, reporoot, err := VCSFromDir(pkg.Dir, filepath.Join(pkg.Root, "src"))
-		if err != nil {
-			log.Println(err)
-			err1 = errors.New("error loading dependencies")
-			continue
-		}
+
 		if containsPathPrefix(seen, pkg.ImportPath) {
 			continue
 		}
 		seen = append(seen, pkg.ImportPath)
+
+		if err != nil {
+			continue
+		}
+
 		id, err := vcs.identify(pkg.Dir)
 		if err != nil {
 			log.Println(err)
