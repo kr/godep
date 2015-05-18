@@ -61,6 +61,7 @@ func rewriteTree(path, qual string, paths []string) error {
 // rewriteGoFile rewrites import statments in the named file
 // according to the rules for func qualify.
 func rewriteGoFile(name, qual string, paths []string) error {
+	printerConfig := &printer.Config{Mode: printer.TabIndent | printer.UseSpaces, Tabwidth: 8}
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, name, nil, parser.ParseComments)
 	if err != nil {
@@ -83,20 +84,34 @@ func rewriteGoFile(name, qual string, paths []string) error {
 		return nil
 	}
 
-	ast.SortImports(fset, f)
-	wpath := name + ".temp"
+	wpath := name + ".temp.rewritten"
 	w, err := os.Create(wpath)
 	if err != nil {
 		return err
 	}
-	err = (&printer.Config{Mode: printer.TabIndent | printer.UseSpaces, Tabwidth: 8}).Fprint(w, fset, f)
+	if err = printerConfig.Fprint(w, fset, f); err != nil {
+		return err
+	}
+	if err = w.Close(); err != nil {
+		return err
+	}
+
+	fset = token.NewFileSet()
+	f, err = parser.ParseFile(fset, wpath, nil, parser.ParseComments)
+	ast.SortImports(fset, f)
+
+	wpath = name + ".temp.sorted"
+	w, err = os.Create(wpath)
 	if err != nil {
 		return err
 	}
-	err = w.Close()
-	if err != nil {
+	if err = printerConfig.Fprint(w, fset, f); err != nil {
 		return err
 	}
+	if err = w.Close(); err != nil {
+		return err
+	}
+
 	return os.Rename(wpath, name)
 }
 
