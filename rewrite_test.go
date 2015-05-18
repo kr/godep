@@ -66,7 +66,6 @@ var (
 
 import (
 	"E"
-
 	"C/Godeps/_workspace/src/D"
 )
 `
@@ -75,6 +74,20 @@ import (
 import (
 	"C/Godeps/_workspace/src/D"
 	"C/Godeps/_workspace/src/E"
+)
+`
+	sortOrderPreserveComment = `package main
+
+import (
+	"C/Godeps/_workspace/src/E" // src E
+	"D" // src D
+)
+`
+	sortOrderPreserveCommentRewritten = `package main
+
+import (
+	"C/Godeps/_workspace/src/D" // src D
+	"C/Godeps/_workspace/src/E" // src E
 )
 `
 )
@@ -193,6 +206,16 @@ func TestRewrite(t *testing.T) {
 			},
 			want: []*node{
 				{"C/main.go", sortOrderRewritten, nil},
+			},
+		},
+		{ // sort after rewrite
+			cwd:   "C",
+			paths: []string{"D", "E"},
+			start: []*node{
+				{"C/main.go", sortOrderPreserveComment, nil},
+			},
+			want: []*node{
+				{"C/main.go", sortOrderPreserveCommentRewritten, nil},
 			},
 		},
 	}
