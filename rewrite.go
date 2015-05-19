@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"log"
 	"os"
 	"path/filepath"
@@ -84,24 +85,18 @@ func rewriteGoFile(name, qual string, paths []string) error {
 		return nil
 	}
 
-	wpath := name + ".temp.rewritten"
-	w, err := os.Create(wpath)
-	if err != nil {
-		return err
-	}
-	if err = printerConfig.Fprint(w, fset, f); err != nil {
-		return err
-	}
-	if err = w.Close(); err != nil {
+	b := new(bytes.Buffer)
+	if err = printerConfig.Fprint(b, fset, f); err != nil {
 		return err
 	}
 
 	fset = token.NewFileSet()
-	f, err = parser.ParseFile(fset, wpath, nil, parser.ParseComments)
+	wpath := name + ".temp.rewritten"
+	f, err = parser.ParseFile(fset, wpath, b, parser.ParseComments)
 	ast.SortImports(fset, f)
 
 	wpath = name + ".temp.sorted"
-	w, err = os.Create(wpath)
+	w, err := os.Create(wpath)
 	if err != nil {
 		return err
 	}
