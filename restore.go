@@ -20,9 +20,17 @@ func runRestore(cmd *Command, args []string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	hadError := false
+
+	errors := make(chan error)
 	for _, dep := range g.Deps {
-		err := restore(dep)
+		go func() {
+			errors <- restore(dep)
+		}()
+	}
+
+	hadError := false
+	for range g.Deps {
+		err := <-errors
 		if err != nil {
 			log.Println("restore:", err)
 			hadError = true
