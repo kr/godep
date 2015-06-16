@@ -224,6 +224,46 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // transitive dependency with source starting with '_'
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"_ignored.go", pkg("D", "T"), nil},
+						{"main.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 		{ // two packages, one in a subdirectory
 			cwd: "C",
 			start: []*node{
