@@ -354,11 +354,38 @@ func copyFile(dst, src string) error {
 }
 
 func copyWithoutImportComment(w io.Writer, r io.Reader) error {
-	sc := bufio.NewScanner(r)
-	for sc.Scan() {
-		_, err := w.Write(append(stripImportComment(sc.Bytes()), '\n'))
+	br := bufio.NewReader(r)
+	// first is true if at the beginning of a line
+	first := true
+	for {
+		line, prefix, err := br.ReadLine()
 		if err != nil {
+			if err == io.EOF {
+				// write a trailing newline
+				if !first {
+					if _, err := w.Write([]byte{'\n'}); err != nil {
+						return err
+					}
+				}
+				return nil
+			}
 			return err
+		}
+		// prefix is true if the next read will be against the same line
+		if prefix {
+			if first {
+				line = stripImportComment(line)
+			}
+			first = false
+			if _, err := w.Write(line); err != nil {
+				return err
+			}
+		} else {
+			line = stripImportComment(line)
+			first = true
+			if _, err := w.Write(append(line, '\n')); err != nil {
+				return err
+			}
 		}
 	}
 	return sc.Err()
