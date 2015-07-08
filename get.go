@@ -26,7 +26,13 @@ func runGet(cmd *Command, args []string) {
 		args = []string{"."}
 	}
 
-	err := command("go", "get", "-d", args).Run()
+	var err error
+	if debug {
+		err = command("go", "get", "-v", "-d", args).Run()
+	} else {
+		err = command("go", "get", "-d", args).Run()
+
+	}
 	if err != nil {
 		log.Fatalln(err)
 	}

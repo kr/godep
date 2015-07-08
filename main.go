@@ -60,6 +60,12 @@ var commands = []*Command{
 	cmdDiff,
 }
 
+var debug bool
+
+func init() {
+	flag.BoolVar(&debug, "debug", false, "enable debugging")
+}
+
 func main() {
 	flag.Usage = usageExit
 	flag.Parse()

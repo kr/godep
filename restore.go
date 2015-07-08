@@ -37,7 +37,14 @@ func runRestore(cmd *Command, args []string) {
 // the given revision.
 func restore(dep Dependency) error {
 	// make sure pkg exists somewhere in GOPATH
-	err := runIn(".", "go", "get", "-d", dep.ImportPath)
+
+	var err error
+	if debug {
+		err = runIn(".", "go", "get", "-v", "-d", dep.ImportPath)
+	} else {
+		err = runIn(".", "go", "get", "-d", dep.ImportPath)
+	}
+
 	if err != nil {
 		return err
 	}
