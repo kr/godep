@@ -62,6 +62,7 @@ func godeps(importpath string, keyval ...string) *Godeps {
 
 func TestSave(t *testing.T) {
 	var cases = []struct {
+		desc     string
 		cwd      string
 		args     []string
 		flagR    bool
@@ -71,7 +72,7 @@ func TestSave(t *testing.T) {
 		wdep     Godeps
 		werr     bool
 	}{
-		{ // simple case, one dependency
+		{desc: "simple case, one dependency",
 			cwd: "C",
 			start: []*node{
 				{
@@ -93,7 +94,7 @@ func TestSave(t *testing.T) {
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -102,7 +103,7 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // strip import comment
+		{desc: "strip import comment",
 			cwd: "C",
 			start: []*node{
 				{
@@ -124,7 +125,7 @@ func TestSave(t *testing.T) {
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", "package D\n", nil},
+				{"C/vendor/D/main.go", "package D\n", nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -134,8 +135,8 @@ func TestSave(t *testing.T) {
 			},
 		},
 		{
-			// dependency in same repo with existing manifest
 			// see bug https://github.com/tools/godep/issues/69
+			desc: "dependency in same repo with existing manifest",
 			cwd:  "P",
 			args: []string{"./..."},
 			start: []*node{
@@ -160,8 +161,8 @@ func TestSave(t *testing.T) {
 			},
 		},
 		{
-			// dependency on parent directory in same repo
 			// see bug https://github.com/tools/godep/issues/70
+			desc: "dependency on parent directory in same repo",
 			cwd:  "P",
 			args: []string{"./..."},
 			start: []*node{
@@ -184,8 +185,9 @@ func TestSave(t *testing.T) {
 				Deps:       []Dependency{},
 			},
 		},
-		{ // transitive dependency
-			cwd: "C",
+		{
+			desc: "transitive dependency",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -214,8 +216,8 @@ func TestSave(t *testing.T) {
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/vendor/D/main.go", pkg("D", "T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -225,8 +227,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // two packages, one in a subdirectory
-			cwd: "C",
+		{
+			desc: "two packages, one in a subdirectory",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -248,8 +251,8 @@ func TestSave(t *testing.T) {
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D", "D/P"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
-				{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
+				{"C/vendor/D/main.go", pkg("D"), nil},
+				{"C/vendor/D/P/main.go", pkg("P"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -258,8 +261,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // repo root is not a package (no go files)
-			cwd: "C",
+		{
+			desc: "repo root is not a package (no go files)",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -281,8 +285,8 @@ func TestSave(t *testing.T) {
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D/P", "D/Q"), nil},
-				{"C/Godeps/_workspace/src/D/P/main.go", pkg("P"), nil},
-				{"C/Godeps/_workspace/src/D/Q/main.go", pkg("Q"), nil},
+				{"C/vendor/D/P/main.go", pkg("P"), nil},
+				{"C/vendor/D/Q/main.go", pkg("Q"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -292,8 +296,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // symlink
-			cwd: "C",
+		{
+			desc: "symlink",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -315,7 +320,7 @@ func TestSave(t *testing.T) {
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -324,8 +329,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // add one dependency; keep other dependency version
-			cwd: "C",
+		{
+			desc: "add one dependency; keep other dependency version",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -351,15 +357,15 @@ func TestSave(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("main", "D", "E"), nil},
 						{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
-						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
+						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D", "E"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-				{"C/Godeps/_workspace/src/E/main.go", pkg("E"), nil},
+				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/vendor/E/main.go", pkg("E"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -369,8 +375,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // remove one dependency; keep other dependency version
-			cwd: "C",
+		{
+			desc: "remove one dependency; keep other dependency version",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -396,15 +403,15 @@ func TestSave(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("main", "D"), nil},
 						{"Godeps/Godeps.json", godeps("C", "D", "D1", "E", "E1"), nil},
-						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-						{"Godeps/_workspace/src/E/main.go", pkg("E") + decl("E1"), nil},
+						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
+						{"vendor/E/main.go", pkg("E") + decl("E1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-				{"C/Godeps/_workspace/src/E/main.go", "(absent)", nil},
+				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/vendor/E/main.go", "(absent)", nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -413,8 +420,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // add one dependency from same repo
-			cwd: "C",
+		{
+			desc: "add one dependency from same repo",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -431,14 +439,14 @@ func TestSave(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("main", "D/A", "D/B"), nil},
 						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
-						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-				{"C/Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
+				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/vendor/D/B/main.go", pkg("B") + decl("B1"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -448,8 +456,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // add one dependency from same repo, require same version
-			cwd: "C",
+		{
+			desc: "add one dependency from same repo, require same version",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -469,13 +478,13 @@ func TestSave(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("main", "D/A", "D/B"), nil},
 						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
-						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -485,8 +494,9 @@ func TestSave(t *testing.T) {
 			},
 			werr: true,
 		},
-		{ // replace dependency from same repo parent dir
-			cwd: "C",
+		{
+			desc: "replace dependency from same repo parent dir",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -503,14 +513,14 @@ func TestSave(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("main", "D"), nil},
 						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
-						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -519,8 +529,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // replace dependency from same repo parent dir, require same version
-			cwd: "C",
+		{
+			desc: "replace dependency from same repo parent dir, require same version",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -540,13 +551,13 @@ func TestSave(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("main", "D"), nil},
 						{"Godeps/Godeps.json", godeps("C", "D/A", "D1"), nil},
-						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -556,8 +567,9 @@ func TestSave(t *testing.T) {
 			},
 			werr: true,
 		},
-		{ // replace dependency from same repo child dir
-			cwd: "C",
+		{
+			desc: "replace dependency from same repo child dir",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -574,15 +586,15 @@ func TestSave(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("main", "D/A"), nil},
 						{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
-						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/Godeps/_workspace/src/D/main.go", "(absent)", nil},
-				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/vendor/D/main.go", "(absent)", nil},
+				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -591,8 +603,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // replace dependency from same repo child dir, require same version
-			cwd: "C",
+		{
+			desc: "replace dependency from same repo child dir, require same version",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -612,15 +625,15 @@ func TestSave(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("main", "D/A"), nil},
 						{"Godeps/Godeps.json", godeps("C", "D", "D1"), nil},
-						{"Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D") + decl("D1"), nil},
-				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
+				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -630,8 +643,9 @@ func TestSave(t *testing.T) {
 			},
 			werr: true,
 		},
-		{ // Bug https://github.com/tools/godep/issues/85
-			cwd: "C",
+		{
+			desc: "Bug https://github.com/tools/godep/issues/85",
+			cwd:  "C",
 			start: []*node{
 				{
 					"D",
@@ -651,15 +665,15 @@ func TestSave(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("main", "D/A", "D/B"), nil},
 						{"Godeps/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
-						{"Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-						{"Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
+						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
+						{"vendor/D/B/main.go", pkg("B") + decl("B1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/Godeps/_workspace/src/D/A/main.go", pkg("A") + decl("A1"), nil},
-				{"C/Godeps/_workspace/src/D/B/main.go", pkg("B") + decl("B1"), nil},
+				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/vendor/D/B/main.go", pkg("B") + decl("B1"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -669,8 +683,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // intermediate dependency that uses godep save -r, main -r=false
-			cwd: "C",
+		{
+			desc: "intermediate dependency that uses godep save -r, main -r=false",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -692,8 +707,8 @@ func TestSave(t *testing.T) {
 					"D",
 					"",
 					[]*node{
-						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
-						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+						{"main.go", pkg("D", "D/vendor/T"), nil},
+						{"vendor/T/main.go", pkg("T"), nil},
 						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
 						{"+git", "D1", nil},
 					},
@@ -701,8 +716,8 @@ func TestSave(t *testing.T) {
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/vendor/D/main.go", pkg("D", "T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -712,7 +727,8 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // intermediate dependency that uses godep save -r, main -r too
+		{
+			desc:  "intermediate dependency that uses godep save -r, main -r too",
 			cwd:   "C",
 			flagR: true,
 			start: []*node{
@@ -736,17 +752,17 @@ func TestSave(t *testing.T) {
 					"D",
 					"",
 					[]*node{
-						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
-						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+						{"main.go", pkg("D", "D/vendor/T"), nil},
+						{"vendor/T/main.go", pkg("T"), nil},
 						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
 						{"+git", "D1", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/main.go", pkg("main", "C/vendor/D"), nil},
+				{"C/vendor/D/main.go", pkg("D", "C/vendor/T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -756,7 +772,8 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // rewrite files under build constraints
+		{
+			desc:  "rewrite files under build constraints",
 			cwd:   "C",
 			flagR: true,
 			start: []*node{
@@ -779,9 +796,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 			want: []*node{
-				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
-				{"C/x.go", "// +build x\n\n" + pkg("main", "C/Godeps/_workspace/src/D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+				{"C/main.go", pkg("main", "C/vendor/D"), nil},
+				{"C/x.go", "// +build x\n\n" + pkg("main", "C/vendor/D"), nil},
+				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -790,8 +807,9 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // exclude dependency subdirectories even when obtained by a rewritten import path
-			cwd: "C",
+		{
+			desc: "exclude dependency subdirectories even when obtained by a rewritten import path",
+			cwd:  "C",
 			start: []*node{
 				{
 					"C",
@@ -814,8 +832,8 @@ func TestSave(t *testing.T) {
 					"D",
 					"",
 					[]*node{
-						{"main.go", pkg("D", "D/Godeps/_workspace/src/T/X"), nil},
-						{"Godeps/_workspace/src/T/X/main.go", pkg("X"), nil},
+						{"main.go", pkg("D", "D/vendor/T/X"), nil},
+						{"vendor/T/X/main.go", pkg("X"), nil},
 						{"Godeps/Godeps.json", godeps("D", "T/X", "T1"), nil},
 						{"+git", "D1", nil},
 					},
@@ -823,8 +841,8 @@ func TestSave(t *testing.T) {
 			},
 			want: []*node{
 				{"C/main.go", pkg("main", "D", "T"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T/X"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/vendor/D/main.go", pkg("D", "T/X"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -834,7 +852,8 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // find transitive dependencies across roots
+		{
+			desc:  "find transitive dependencies across roots",
 			cwd:   "C",
 			flagR: true,
 			altstart: []*node{
@@ -860,17 +879,17 @@ func TestSave(t *testing.T) {
 					"D",
 					"",
 					[]*node{
-						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
-						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+						{"main.go", pkg("D", "D/vendor/T"), nil},
+						{"vendor/T/main.go", pkg("T"), nil},
 						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
 						{"+git", "D1", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+				{"C/main.go", pkg("main", "C/vendor/D"), nil},
+				{"C/vendor/D/main.go", pkg("D", "C/vendor/T"), nil},
+				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -880,7 +899,8 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // pull in minimal dependencies, see https://github.com/tools/godep/issues/93
+		{
+			desc:  "pull in minimal dependencies, see https://github.com/tools/godep/issues/93",
 			cwd:   "C",
 			flagR: true,
 			start: []*node{
@@ -904,17 +924,17 @@ func TestSave(t *testing.T) {
 					"D",
 					"",
 					[]*node{
-						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
+						{"main.go", pkg("D", "D/vendor/T"), nil},
 						{"X/main.go", pkg("X"), nil},
-						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+						{"vendor/T/main.go", pkg("T"), nil},
 						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
 						{"+git", "D1", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D/X"), nil},
-				{"C/Godeps/_workspace/src/D/X/main.go", pkg("X"), nil},
+				{"C/main.go", pkg("main", "C/vendor/D/X"), nil},
+				{"C/vendor/D/X/main.go", pkg("X"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
@@ -967,6 +987,7 @@ func TestSave(t *testing.T) {
 			panic(err)
 		}
 
+		t.Logf("Case: %s\n", test.desc)
 		checkTree(t, &node{src, "", test.want})
 
 		f, err := os.Open(filepath.Join(dir, "Godeps/Godeps.json"))
