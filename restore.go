@@ -7,12 +7,20 @@ import (
 )
 
 var cmdRestore = &Command{
-	Usage: "restore",
+	Usage: "restore [-v]",
 	Short: "check out listed dependency versions in GOPATH",
 	Long: `
 Restore checks out the Godeps-specified version of each package in GOPATH.
+
+If -v is given, verbose output is enabled.
 `,
 	Run: runRestore,
+}
+
+var restoreVerbose bool
+
+func init() {
+	cmdRestore.Flag.BoolVar(&restoreVerbose, "v", false, "enable verbose output")
 }
 
 func runRestore(cmd *Command, args []string) {
@@ -37,7 +45,14 @@ func runRestore(cmd *Command, args []string) {
 // the given revision.
 func restore(dep Dependency) error {
 	// make sure pkg exists somewhere in GOPATH
-	err := runIn(".", "go", "get", "-d", dep.ImportPath)
+
+	var err error
+	if restoreVerbose {
+		err = runIn(".", "go", "get", "-v", "-d", dep.ImportPath)
+	} else {
+		err = runIn(".", "go", "get", "-d", dep.ImportPath)
+	}
+
 	if err != nil {
 		return err
 	}
