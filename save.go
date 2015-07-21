@@ -103,8 +103,8 @@ func save(pkgs []string) error {
 		GoVersion:  ver,
 	}
 
-	printVerbose("import-path", gnew.ImportPath)
-	printVerbose("go-version", gnew.GoVersion)
+	vprintln("import-path", gnew.ImportPath)
+	vprintln("go-version", gnew.GoVersion)
 
 	if len(pkgs) > 0 {
 		gnew.Packages = pkgs
@@ -230,7 +230,7 @@ func carryVersion(a *Godeps, db *Dependency) error {
 	// First see if this exact package is already in the list.
 	for _, da := range a.Deps {
 		if db.ImportPath == da.ImportPath {
-			printVerbose("dependency", db.ImportPath, db.Rev, db.Comment)
+			vprintln("dependency", db.ImportPath, db.Rev, db.Comment)
 			db.Rev = da.Rev
 			db.Comment = da.Comment
 			return nil
@@ -252,7 +252,7 @@ func carryVersion(a *Godeps, db *Dependency) error {
 		}
 	}
 	// No related package in the list, must be a new repo.
-	printVerbose("new dependency", db.ImportPath, db.Rev, db.Comment)
+	vprintln("new dependency", db.ImportPath, db.Rev, db.Comment)
 	return nil
 }
 
@@ -290,7 +290,7 @@ func copySrc(dir string, deps []Dependency) error {
 			return err
 		}
 		dstpkgroot := filepath.Join(dir, rel)
-		printVerbose("copy", dep.dir, "→", dstpkgroot)
+		vprintln("copy", dep.dir, "->", dstpkgroot)
 		err = os.RemoveAll(dstpkgroot)
 		if err != nil {
 			log.Println(err)
@@ -449,9 +449,9 @@ func writeFile(name, body string) error {
 	return ioutil.WriteFile(name, []byte(body), 0666)
 }
 
-func printVerbose(args ...interface{}) {
+func vprintln(args ...interface{}) {
 	if saveVerbose {
-		args[0] = "\033[1m" + fmt.Sprintf("%s", args[0]) + "\033[0m:\t"
+		args[0] = fmt.Sprintf("%s", args[0]) + ":\t"
 		fmt.Println(args...)
 	}
 }
