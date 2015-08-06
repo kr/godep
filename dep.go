@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -45,6 +46,7 @@ type Dependency struct {
 func (g *Godeps) Load(pkgs []*Package) error {
 	var err1 error
 	var path, seen []string
+	reader := bufio.NewReader(os.Stdin)
 	for _, p := range pkgs {
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
@@ -123,6 +125,13 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			log.Println("dirty working tree (please commit changes):", pkg.Dir)
 			err1 = errors.New("error loading dependencies")
 			continue
+		}
+		if saveP {
+			fmt.Printf("godep: Would you like to index %s ?\n[Y/n]:", pkg.ImportPath)
+			text, _ := reader.ReadString('\n')
+			if text[0] == 'n' {
+				continue
+			}
 		}
 		comment := vcs.describe(pkg.Dir, id)
 		g.Deps = append(g.Deps, Dependency{
