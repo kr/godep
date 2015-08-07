@@ -55,13 +55,16 @@ func (g *Godeps) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
+		// If we can find the root of a VCS repo, then
+		// mark the entire repo as seen, not just p.
+		// This avoids unnecessarily copying other packages
+		// in the same repo but outside of p's subtree.
 		_, reporoot, err := VCSFromDir(p.Dir, filepath.Join(p.Root, "src"))
-		if err != nil {
-			log.Println(err)
-			err1 = errors.New("error loading packages")
-			continue
+		if err == nil {
+			seen = append(seen, filepath.ToSlash(reporoot))
+		} else {
+			seen = append(seen, p.ImportPath)
 		}
-		seen = append(seen, filepath.ToSlash(reporoot))
 		path = append(path, p.Deps...)
 	}
 	var testImports []string

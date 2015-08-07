@@ -923,6 +923,74 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // don't copy dependencies in the same repo, even if not given on the command line
+			cwd:   "C/S",
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main"), nil},
+						{"S/main.go", pkg("S", "C/T"), nil},
+						{"T/main.go", pkg("T"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main"), nil},
+				{"C/S/main.go", pkg("S", "C/T"), nil},
+				{"C/T/main.go", pkg("T"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C/S",
+				Deps:       []Dependency{},
+			},
+		},
+		{ // don't require listed packages to be in VCS
+			cwd:   "C",
+			flagR: true,
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+					},
+				},
+				{
+					"T",
+					"",
+					[]*node{
+						{"main.go", pkg("T"), nil},
+						{"+git", "T1", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
+						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "C/Godeps/_workspace/src/D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "C/Godeps/_workspace/src/T"), nil},
+				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "T", Comment: "T1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()
