@@ -28,6 +28,20 @@ type Package struct {
 	}
 }
 
+var defaultOmitPatterns = []string{
+	"appengine/...",
+	"appengine_internal/...",
+}
+
+func omitPkg(importPath string, omitPkgs []string) bool {
+	for _, pattern := range append(omitPkgs, defaultOmitPatterns...) {
+		if matchPattern(pattern)(importPath) {
+			return true
+		}
+	}
+	return false
+}
+
 // LoadPackages loads the named packages using go list -json.
 // Unlike the go tool, an empty argument list is treated as
 // an empty list; "." must be given explicitly if desired.

@@ -17,7 +17,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [packages]",
+	Usage: "save [-r] [-omit=package1,package2...] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 Save writes a list of the dependencies of the named packages along
@@ -53,14 +53,26 @@ For more about specifying packages, see 'go help packages'.
 	Run: runSave,
 }
 
+type list []string
+
+func (l *list) String() string {
+	return strings.Join(*l, ",")
+}
+func (l *list) Set(value string) error {
+	*l = strings.Split(value, ",")
+	return nil
+}
+
 var (
-	saveCopy = true
-	saveR    = false
+	saveCopy      = true
+	saveR         = false
+	saveOmit list = []string{}
 )
 
 func init() {
 	cmdSave.Flag.BoolVar(&saveCopy, "copy", true, "copy source code")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
+	cmdSave.Flag.Var(&saveOmit, "omit", "comma-separated list of packages to omit")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -106,7 +118,7 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
-	err = gnew.Load(a)
+	err = gnew.Load(a, saveOmit)
 	if err != nil {
 		return err
 	}

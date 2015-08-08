@@ -42,10 +42,13 @@ type Dependency struct {
 }
 
 // pkgs is the list of packages to read dependencies
-func (g *Godeps) Load(pkgs []*Package) error {
+func (g *Godeps) Load(pkgs []*Package, omitPkgs []string) error {
 	var err1 error
 	var path, seen []string
 	for _, p := range pkgs {
+		if omitPkg(p.ImportPath, omitPkgs) {
+			continue
+		}
 		if p.Standard {
 			log.Println("ignoring stdlib package:", p.ImportPath)
 			continue
@@ -74,6 +77,9 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		return err
 	}
 	for _, p := range ps {
+		if omitPkg(p.ImportPath, omitPkgs) {
+			continue
+		}
 		if p.Standard {
 			continue
 		}
@@ -95,6 +101,9 @@ func (g *Godeps) Load(pkgs []*Package) error {
 		return err
 	}
 	for _, pkg := range ps {
+		if omitPkg(pkg.ImportPath, omitPkgs) {
+			continue
+		}
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
 			err1 = errors.New("error loading dependencies")
