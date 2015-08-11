@@ -17,8 +17,8 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [packages]",
-	Short: "list and copy dependencies into Godeps",
+	Usage: "save [-r] [-copy=false] [packages]",
+	Short: "list and copy packages into Godeps",
 	Long: `
 
 Save writes a list of the named packages and their dependencies along
@@ -49,6 +49,11 @@ To update a dependency to a newer revision, use 'godep update'.
 If -r is given, import statements will be rewritten to refer
 directly to the copied source code. This is not compatible with the
 vendor experiment.
+
+If -copy=false is given, the list alone is written to file Godeps.
+
+Otherwise, the list is written to Godeps/Godeps.json, and source
+code for the packages is copied into Godeps/_workspace.
 
 For more about specifying packages, see 'go help packages'.
 `,
