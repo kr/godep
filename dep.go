@@ -169,8 +169,11 @@ func ReadAndLoadGodeps(path string) (*Godeps, error) {
 		d := &g.Deps[i]
 		d.vcs, err = VCSForImportPath(d.ImportPath)
 		if err != nil {
-			log.Printf("fetch %s failure", d.ImportPath)
-			continue
+			if skipError {
+				log.Printf("fetch %s failure but skipped", d.ImportPath)
+				continue
+			}
+			return nil, err
 		}
 		avs = append(avs, g.Deps[i])
 	}
