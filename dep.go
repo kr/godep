@@ -164,13 +164,17 @@ func ReadAndLoadGodeps(path string) (*Godeps, error) {
 		return nil, err
 	}
 
+	var avs []Dependency
 	for i := range g.Deps {
 		d := &g.Deps[i]
 		d.vcs, err = VCSForImportPath(d.ImportPath)
 		if err != nil {
-			return nil, err
+			log.Printf("fetch %s failure", d.ImportPath)
+			continue
 		}
+		avs = append(avs, g.Deps[i])
 	}
+	g.Deps = avs
 	return g, nil
 }
 
