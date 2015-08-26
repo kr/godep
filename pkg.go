@@ -32,10 +32,19 @@ type Package struct {
 // Unlike the go tool, an empty argument list is treated as
 // an empty list; "." must be given explicitly if desired.
 func LoadPackages(name ...string) (a []*Package, err error) {
+	args := []string{"list", "-e", "-json"}
+	return runListCommand(args, name...)
+}
+
+func LoadPackagesWithTags(tags string, name ...string) (a []*Package, err error) {
+	args := []string{"list", "-e", "-json", "-tags", tags}
+	return runListCommand(args, name...)
+}
+
+func runListCommand(args []string, name ...string) (a []*Package, err error) {
 	if len(name) == 0 {
 		return nil, nil
 	}
-	args := []string{"list", "-e", "-json"}
 	cmd := exec.Command("go", append(args, name...)...)
 	r, err := cmd.StdoutPipe()
 	if err != nil {
