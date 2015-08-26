@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 )
 
+var skipError = false
+
 var cmdRestore = &Command{
 	Usage: "restore [-v]",
 	Short: "check out listed dependency versions in GOPATH",
@@ -19,6 +21,7 @@ If -v is given, verbose output is enabled.
 
 func init() {
 	cmdRestore.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
+	cmdRestore.Flag.BoolVar(&skipError, "skipError", false, "skip error package")
 }
 
 func runRestore(cmd *Command, args []string) {
