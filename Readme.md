@@ -64,7 +64,7 @@ To add a new package foo/bar, do this:
 
 1. Run `go get foo/bar`
 2. Edit your code to import foo/bar.
-3. Run `godep save` (or `godep save ./...`).
+3. Run `godep save` (or `godep save ./...`, or to rewrite import paths, run `godep save -r ./...`).
 
 #### Update a Dependency
 
