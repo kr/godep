@@ -71,12 +71,13 @@ func rewriteGoFile(name, qual string, paths []string) error {
 
 	var changed bool
 	for _, s := range f.Imports {
-		name, err := strconv.Unquote(s.Path.Value)
+		importName, err := strconv.Unquote(s.Path.Value)
 		if err != nil {
 			return err // can't happen
 		}
-		q := qualify(unqualify(name), qual, paths)
-		if q != name {
+		q := qualify(unqualify(importName), qual, paths)
+		if q != importName {
+			vprintln("rewrite "+name, s.Path.Value, "->", q)
 			s.Path.Value = strconv.Quote(q)
 			changed = true
 		}
