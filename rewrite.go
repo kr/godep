@@ -51,14 +51,18 @@ func rewriteTree(path, qual string, paths []string) error {
 			continue
 		}
 		s := w.Stat()
-		if s.IsDir() && s.Name() == "testdata" {
-			w.SkipDir()
-			continue
-		}
-		if !s.IsDir() && strings.HasSuffix(w.Path(), ".go") {
-			err := rewriteGoFile(w.Path(), qual, paths)
-			if err != nil {
-				return err
+		switch s.IsDir() {
+		case true:
+			if s.Name() == "testdata" {
+				w.SkipDir()
+				continue
+			}
+		case false:
+			if strings.HasSuffix(w.Path(), ".go") {
+				err := rewriteGoFile(w.Path(), qual, paths)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
