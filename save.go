@@ -280,10 +280,30 @@ func copySrc(dir string, deps []Dependency) error {
 			log.Println(err)
 			ok = false
 		}
-		w := fs.Walk(dep.dir)
+
+		var walkDir string
+		if walkDir, err = filepath.EvalSymlinks(dep.dir); err != nil {
+			return err
+		}
+
+		w := fs.Walk(walkDir)
 		for w.Step() {
-			err = copyPkgFile(dir, srcdir, w)
+			// project the relative (symlink) dir to the src dir
+			rel, err := filepath.Rel(walkDir, w.Path())
 			if err != nil {
+				log.Println(err)
+				ok = false
+				continue
+			}
+
+			if rel, err = filepath.Rel(srcdir, filepath.Join(dep.dir, rel)); err != nil {
+				log.Println(err)
+				ok = false
+				continue
+			}
+
+			dst := filepath.Join(dir, rel)
+			if err = copyPkgFile(dst, w.Path(), w); err != nil {
 				log.Println(err)
 				ok = false
 			}
@@ -295,7 +315,7 @@ func copySrc(dir string, deps []Dependency) error {
 	return nil
 }
 
-func copyPkgFile(dstroot, srcroot string, w *fs.Walker) error {
+func copyPkgFile(dst, path string, w *fs.Walker) error {
 	if w.Err() != nil {
 		return w.Err()
 	}
@@ -309,11 +329,7 @@ func copyPkgFile(dstroot, srcroot string, w *fs.Walker) error {
 	if w.Stat().IsDir() {
 		return nil
 	}
-	rel, err := filepath.Rel(srcroot, w.Path())
-	if err != nil { // this should never happen
-		return err
-	}
-	return copyFile(filepath.Join(dstroot, rel), w.Path())
+	return copyFile(dst, path)
 }
 
 // copyFile copies a regular file from src to dst.
