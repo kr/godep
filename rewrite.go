@@ -49,11 +49,20 @@ func rewriteTree(path, qual string, paths []string) error {
 			log.Println("rewrite:", w.Err())
 			continue
 		}
-		if !w.Stat().IsDir() && strings.HasSuffix(w.Path(), ".go") {
-			err := rewriteGoFile(w.Path(), qual, paths)
+		filePath := w.Path()
+		if !w.Stat().IsDir() && strings.HasSuffix(filePath, ".go") {
+			fileInfo, err := os.Lstat(filePath)
 			if err != nil {
 				return err
 			}
+
+			if fileInfo.Mode() != os.ModeSymlink {
+				err = rewriteGoFile(filePath, qual, paths)
+				if err != nil {
+					return err
+				}
+			}
+
 		}
 	}
 	return nil
