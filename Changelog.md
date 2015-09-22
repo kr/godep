@@ -32,7 +32,7 @@ processing Go files and copy the whole directory unmodified.
 
 # v5 04/09/2015
 
-* Fixed vcs selection in restore command to work as go get does
+* Fix vcs selection in restore command to work as go get does
 
 # v4 03/09/2015
 
