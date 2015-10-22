@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 var (
@@ -17,11 +18,12 @@ var (
 // Godeps describes what a package needs to be rebuilt reproducibly.
 // It's the same information stored in file Godeps.
 type Godeps struct {
-	ImportPath string
-	GoVersion  string
-	Packages   []string `json:",omitempty"` // Arguments to save, if any.
-	Deps       []Dependency
-	isOldFile  bool
+	ImportPath   string
+	GoVersion    string
+	Packages     []string `json:",omitempty"` // Arguments to save, if any.
+	SkipPackages []string `json:",omitempty"` // List of Pacakges skiped in godep save
+	Deps         []Dependency
+	isOldFile    bool
 }
 
 func createGodepsFile() (*os.File, error) {
@@ -98,6 +100,7 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 		return err
 	}
 	seen := []string{destImportPath}
+pkgs_loop:
 	for _, pkg := range ps {
 		if pkg.Error.Err != "" {
 			log.Println(pkg.Error.Err)
@@ -125,6 +128,12 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 			err1 = errorLoadingDeps
 			continue
 		}
+		for _, prefix := range g.SkipPackages {
+			if strings.HasPrefix(pkg.ImportPath, prefix) {
+				continue pkgs_loop
+			}
+		}
+
 		comment := vcs.describe(pkg.Dir, id)
 		g.Deps = append(g.Deps, Dependency{
 			ImportPath: pkg.ImportPath,
