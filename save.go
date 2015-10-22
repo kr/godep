@@ -17,7 +17,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [-v] [-t] [packages]",
+	Usage: "save [-no-skip] [-skip=...] [-r] [-v] [-t] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -35,6 +35,7 @@ The dependency list is a JSON document with the following structure:
 	type Godeps struct {
 		ImportPath string
 		GoVersion  string   // Abridged output of 'go version'.
+		SkipPackages []string // List of Pacakges skiped in godep save
 		Packages   []string // Arguments to godep save, if any.
 		Deps       []struct {
 			ImportPath string
@@ -45,6 +46,14 @@ The dependency list is a JSON document with the following structure:
 
 Any packages already present in the list will be left unchanged.
 To update a dependency to a newer revision, use 'godep update'.
+
+If -skip is given, imports that has prefix in skip list will be skipped
+while vendoring packages. Skip list is written into Godeps struct and is
+read within next save. NOTE: list is seperated by ';' for example:
+  -skip=github.com/tools/godep;golang.org/x
+
+If -no-skip is given, skip list will be empty.
+
 
 If -r is given, import statements will be rewritten to refer
 directly to the copied source code. This is not compatible with the
@@ -60,14 +69,21 @@ For more about specifying packages, see 'go help packages'.
 	Run: runSave,
 }
 
+const skipSep = ";"
+
 var (
 	saveR, saveT bool
+
+	saveNoSkip bool
+	saveSkip   string
 )
 
 func init() {
 	cmdSave.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
+	cmdSave.Flag.BoolVar(&saveNoSkip, "no-skip", false, "disable skip import path (also one that was saved)")
+	cmdSave.Flag.StringVar(&saveSkip, "skip", "", "skip import path (list separator :"+skipSep+")")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -75,6 +91,12 @@ func runSave(cmd *Command, args []string) {
 		log.Println("flag -r is incompatible with the vendoring experiment")
 		cmd.UsageExit()
 	}
+
+	if saveSkip != "" && saveNoSkip {
+		log.Println("flag -no-skip is exclusive with -skip")
+		cmd.UsageExit()
+	}
+
 	err := save(args)
 	if err != nil {
 		log.Fatalln(err)
@@ -112,6 +134,14 @@ func save(pkgs []string) error {
 	gnew := &Godeps{
 		ImportPath: dot.ImportPath,
 		GoVersion:  ver,
+	}
+
+	if !saveNoSkip {
+		if saveSkip != "" {
+			gnew.SkipPackages = strings.Split(saveSkip, skipSep)
+		} else {
+			gnew.SkipPackages = gold.SkipPackages
+		}
 	}
 
 	switch len(pkgs) {
