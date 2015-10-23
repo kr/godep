@@ -265,7 +265,19 @@ func removeSrc(srcdir string, deps []Dependency) error {
 	return nil
 }
 
+// parents returns list of parent directories given a path
+// e.g. parent("a/b/c") -> []string{"a/b", "a"}
+func parents(path string) []string {
+	out := []string{}
+	for path = filepath.Dir(path); path != "."; path = filepath.Dir(path) {
+		out = append(out, path)
+	}
+	return out
+}
+
 func copySrc(dir string, deps []Dependency) error {
+	// mapping to see if we visited a parent directory already
+	visited := make(map[string]bool)
 	ok := true
 	for _, dep := range deps {
 		srcdir := filepath.Join(dep.ws, "src")
@@ -279,6 +291,8 @@ func copySrc(dir string, deps []Dependency) error {
 			log.Println(err)
 			ok = false
 		}
+
+		// copy actual dependency
 		vf := dep.vcs.listFiles(dep.dir)
 		w := fs.Walk(dep.dir)
 		for w.Step() {
@@ -288,10 +302,35 @@ func copySrc(dir string, deps []Dependency) error {
 				ok = false
 			}
 		}
+
+		// check parent directorys for legal files and copy
+		for _, parent := range parents(rel) {
+			depdir := filepath.Join(srcdir, parent)
+
+			// prevent copying twice
+			if visited[depdir] {
+				continue
+			}
+			visited[depdir] = true
+
+			vf := dep.vcs.listFiles(depdir)
+			w := fs.Walk(depdir)
+			for w.Step() {
+				if IsLegalFile(w.Stat().Name()) {
+					err = copyPkgFile(vf, dir, srcdir, w)
+					if err != nil {
+						log.Println(err)
+						ok = false
+					}
+				}
+			}
+		}
 	}
+
 	if !ok {
 		return errorCopyingSourceCode
 	}
+
 	return nil
 }
 
