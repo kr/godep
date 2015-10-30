@@ -52,7 +52,7 @@ var vcsHg = &VCS{
 
 	IdentifyCmd: "identify --id --debug",
 	DescribeCmd: "log -r . --template {latesttag}-{latesttagdistance}",
-	DiffCmd:     "diff -r {rev}",
+	DiffCmd:     "diff -r {rev} .",
 	ListCmd:     "status --all --no-status",
 	RootCmd:     "root",
 
