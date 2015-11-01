@@ -265,16 +265,6 @@ func removeSrc(srcdir string, deps []Dependency) error {
 	return nil
 }
 
-// parents returns list of parent directories given a path
-// e.g. parent("a/b/c") -> []string{"a/b", "a"}
-func parents(path string) []string {
-	out := []string{}
-	for path = filepath.Dir(path); path != "."; path = filepath.Dir(path) {
-		out = append(out, path)
-	}
-	return out
-}
-
 func copySrc(dir string, deps []Dependency) error {
 	// mapping to see if we visited a parent directory already
 	visited := make(map[string]bool)
@@ -303,25 +293,33 @@ func copySrc(dir string, deps []Dependency) error {
 			}
 		}
 
-		// check parent directorys for legal files and copy
-		for _, parent := range parents(rel) {
-			depdir := filepath.Join(srcdir, parent)
+		// Look for legal files in root
+		//  some packages are imports as a sub-package but license info
+		//  is at root:  exampleorg/common has license file in exampleorg
+		//
+		if dep.ImportPath == dep.root {
+			// we are already at root
+			continue
+		}
 
-			// prevent copying twice
-			if visited[depdir] {
-				continue
-			}
-			visited[depdir] = true
-
-			vf := dep.vcs.listFiles(depdir)
-			w := fs.Walk(depdir)
-			for w.Step() {
-				if IsLegalFile(w.Stat().Name()) {
-					err = copyPkgFile(vf, dir, srcdir, w)
-					if err != nil {
-						log.Println(err)
-						ok = false
-					}
+		// prevent copying twice This could happen if we have
+		//   two subpackages listed someorg/common and
+		//   someorg/anotherpack which has their license in
+		//   the parent dir of someorg
+		rootdir := filepath.Join(srcdir, filepath.FromSlash(dep.root))
+		if visited[rootdir] {
+			continue
+		}
+		visited[rootdir] = true
+		vf = dep.vcs.listFiles(rootdir)
+		w = fs.Walk(rootdir)
+		for w.Step() {
+			fname := filepath.Base(w.Path())
+			if IsLegalFile(fname) {
+				err = copyPkgFile(vf, dir, srcdir, w)
+				if err != nil {
+					log.Println(err)
+					ok = false
 				}
 			}
 		}

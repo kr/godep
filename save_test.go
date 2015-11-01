@@ -1319,21 +1319,3 @@ func TestCopyWithoutImportCommentLongLines(t *testing.T) {
 		t.Fatalf("copyWithoutImportComment errored: %s", err.Error())
 	}
 }
-
-func TestParents(t *testing.T) {
-	cases := []struct {
-		path    string
-		parents []string
-	}{
-		{"", []string{}},
-		{"a", []string{}},
-		{"a/b", []string{"a"}},
-		{"a/b/c", []string{"a/b", "a"}},
-	}
-	for pos, tt := range cases {
-		out := parents(tt.path)
-		if !reflect.DeepEqual(tt.parents, out) {
-			t.Errorf("Case %d: got %v expected %v", pos, out, tt.path)
-		}
-	}
-}
