@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"text/template"
@@ -61,6 +62,7 @@ func godeps(importpath string, keyval ...string) *Godeps {
 }
 
 func TestSave(t *testing.T) {
+	var majorGoVersion = strings.Join(strings.Split(runtime.Version(), ".")[:2], ".")
 	var cases = []struct {
 		cwd      string
 		args     []string
@@ -98,6 +100,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Godeps{
 				ImportPath: "C",
+				GoVersion:  majorGoVersion,
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
 				},
@@ -1146,6 +1149,7 @@ func TestSave(t *testing.T) {
 		}
 		saveR = test.flagR
 		saveT = test.flagT
+
 		err = save(test.args)
 		if g := err != nil; g != test.werr {
 			if err != nil {
@@ -1173,6 +1177,9 @@ func TestSave(t *testing.T) {
 
 		if g.ImportPath != test.wdep.ImportPath {
 			t.Errorf("ImportPath = %s want %s", g.ImportPath, test.wdep.ImportPath)
+		}
+		if test.wdep.GoVersion != "" && g.GoVersion != test.wdep.GoVersion {
+			t.Errorf("GoVersion = %s want %s", g.GoVersion, test.wdep.GoVersion)
 		}
 		for i := range g.Deps {
 			g.Deps[i].Rev = ""
