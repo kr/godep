@@ -267,11 +267,20 @@ func removeSrc(srcdir string, deps []Dependency) error {
 }
 
 func copySrc(dir string, deps []Dependency) error {
+	var err error
 	// mapping to see if we visited a parent directory already
 	visited := make(map[string]bool)
 	ok := true
 	for _, dep := range deps {
 		srcdir := filepath.Join(dep.ws, "src")
+		srcdir, err = filepath.EvalSymlinks(srcdir)
+		if err != nil {
+			return err
+		}
+		dep.dir, err = filepath.EvalSymlinks(dep.dir)
+		if err != nil {
+			return err
+		}
 		rel, err := filepath.Rel(srcdir, dep.dir)
 		if err != nil { // this should never happen
 			return err
@@ -316,7 +325,7 @@ func copySrc(dir string, deps []Dependency) error {
 		w = fs.Walk(rootdir)
 		for w.Step() {
 			fname := filepath.Base(w.Path())
-			if IsLegalFile(fname) {
+			if IsLegalFile(fname) && !strings.Contains(w.Path(), sep) {
 				err = copyPkgFile(vf, dir, srcdir, w)
 				if err != nil {
 					log.Println(err)
