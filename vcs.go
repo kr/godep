@@ -40,7 +40,7 @@ var vcsGit = &VCS{
 
 	IdentifyCmd: "rev-parse HEAD",
 	DescribeCmd: "describe --tags",
-	DiffCmd:     "diff {rev}",
+	DiffCmd:     "diff {rev} --dirstat .",
 	ListCmd:     "ls-files --full-name",
 	RootCmd:     "rev-parse --show-toplevel",
 
