@@ -81,3 +81,21 @@ func goVersion() (string, error) {
 	}
 	return p[2], nil
 }
+
+// dependencySlice - slice of Dependency
+type dependencySlice []Dependency
+
+// Len implements sort Len interface
+func (this dependencySlice) Len() int {
+	return len(this)
+}
+
+// Less implements sort Less interface
+func (this dependencySlice) Less(i, j int) bool {
+	return this[i].ImportPath < this[j].ImportPath
+}
+
+// Less implements sort Swap interface
+func (this dependencySlice) Swap(i, j int) {
+	this[i], this[j] = this[j], this[i]
+}
