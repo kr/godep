@@ -1149,7 +1149,7 @@ func TestSave(t *testing.T) {
 		}
 		saveR = test.flagR
 		saveT = test.flagT
-		err = save(test.args)
+		err = save(false, test.args)
 		if g := err != nil; g != test.werr {
 			if err != nil {
 				t.Log(err)

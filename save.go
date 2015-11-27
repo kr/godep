@@ -17,7 +17,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [-v] [-t] [packages]",
+	Usage: "save [-r] [-v] [-t] [-a] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -55,19 +55,24 @@ If -v is given, verbose output is enabled.
 If -t is given, test files (*_test.go files + testdata directories) are
 also saved.
 
+If -a is given, it loads all packages including the ones in 'IgnoredGoFiles'
+from 'go list -e json' command. This is useful if you need to vendor everything
+regardless of build tags.
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
 }
 
 var (
-	saveR, saveT bool
+	saveR, saveT, saveA bool
 )
 
 func init() {
 	cmdSave.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
+	cmdSave.Flag.BoolVar(&saveA, "a", false, "load from ignored files")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -75,14 +80,18 @@ func runSave(cmd *Command, args []string) {
 		log.Println("flag -r is incompatible with the vendoring experiment")
 		cmd.UsageExit()
 	}
-	err := save(args)
+	err := save(saveA, args)
 	if err != nil {
 		log.Fatalln(err)
 	}
 }
 
-func dotPackage() (*Package, error) {
-	p, err := LoadPackages(".")
+func dotPackage(saveA bool) (*Package, error) {
+	loadFunc := LoadPackages
+	if saveA {
+		loadFunc = LoadPackagesAll
+	}
+	p, err := loadFunc(".")
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +101,8 @@ func dotPackage() (*Package, error) {
 	return p[0], nil
 }
 
-func save(pkgs []string) error {
-	dot, err := dotPackage()
+func save(saveA bool, pkgs []string) error {
+	dot, err := dotPackage(saveA)
 	if err != nil {
 		return err
 	}
@@ -121,7 +130,11 @@ func save(pkgs []string) error {
 		gnew.Packages = pkgs
 	}
 
-	a, err := LoadPackages(pkgs...)
+	loadFunc := LoadPackages
+	if saveA {
+		loadFunc = LoadPackagesAll
+	}
+	a, err := loadFunc(pkgs...)
 	if err != nil {
 		return err
 	}
