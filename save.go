@@ -17,7 +17,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [-v] [-t] [packages]",
+	Usage: "save [-r] [-v] [-t] [-m] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -101,6 +101,8 @@ func save(pkgs []string) error {
 	if err != nil {
 		return err
 	}
+
+	ver = strings.Join(strings.Split(ver, ".")[:2], ".")
 
 	gold, err := loadDefaultGodepsFile()
 	if err != nil {
