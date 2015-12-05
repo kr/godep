@@ -17,7 +17,7 @@ import (
 )
 
 var cmdSave = &Command{
-	Usage: "save [-r] [-v] [-t] [packages]",
+	Usage: "save [-r] [-v] [-t] [-i] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -55,6 +55,9 @@ If -v is given, verbose output is enabled.
 If -t is given, test files (*_test.go files + testdata directories) are
 also saved.
 
+If -i is given, VCS dirty state is ignored.  This facilitates simultaneous
+package development and should never be used with production builds.
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
@@ -68,6 +71,7 @@ func init() {
 	cmdSave.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
+	cmdSave.Flag.BoolVar(&ignoreDirtyState, "i", false, "ignore dirty ")
 }
 
 func runSave(cmd *Command, args []string) {

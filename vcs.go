@@ -25,6 +25,9 @@ type VCS struct {
 	ExistsCmd string
 }
 
+// ignoreDirtyState will override isDirty if set to true.
+var ignoreDirtyState = false
+
 var vcsBzr = &VCS{
 	vcs: vcs.ByCmd("bzr"),
 
@@ -110,6 +113,11 @@ func (v *VCS) describe(dir, rev string) string {
 }
 
 func (v *VCS) isDirty(dir, rev string) bool {
+
+	if ignoreDirtyState {
+		return false
+	}
+
 	out, err := v.runOutput(dir, v.DiffCmd, "rev", rev)
 	return err != nil || len(out) != 0
 }
