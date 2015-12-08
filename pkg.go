@@ -43,10 +43,12 @@ func LoadPackages(names ...string) (a []*Package, err error) {
 	}
 	for _, i := range importPaths(names) {
 		p, err := listPackage(i)
-		if err != nil {
-			return nil, err
+		if p != nil {
+			a = append(a, p)
 		}
-		a = append(a, p)
+		if err != nil {
+			return a, err
+		}
 	}
 	return a, nil
 }
