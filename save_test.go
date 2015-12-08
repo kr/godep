@@ -1174,6 +1174,40 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // toplevel package has no buildable Go sources
+			cwd:  "C",
+			args: []string{"./..."},
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"S/lib.go", pkg("S", "D"), nil},
+						{"M/main.go", pkg("main", "C/S"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"lib.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/S/lib.go", pkg("S", "D"), nil},
+				{"C/M/main.go", pkg("main", "C/S"), nil},
+				{"C/Godeps/_workspace/src/D/lib.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+		},
 	}
 
 	wd, err := os.Getwd()

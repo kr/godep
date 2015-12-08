@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go/build"
 	"io"
 	"io/ioutil"
 	"log"
@@ -87,7 +88,11 @@ func runSave(cmd *Command, args []string) {
 func dotPackage() (*Package, error) {
 	p, err := LoadPackages(".")
 	if err != nil {
-		return nil, err
+		// We only want an import path, really and it is
+		// provided even if there are no buildable Go sources
+		if _, ok := err.(*build.NoGoError); !ok {
+			return nil, err
+		}
 	}
 	if len(p) > 1 {
 		panic("Impossible number of packages")

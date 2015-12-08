@@ -1,6 +1,8 @@
 package main
 
 import (
+	"go/build"
+	"log"
 	"regexp"
 	"strings"
 )
@@ -43,10 +45,16 @@ func LoadPackages(names ...string) (a []*Package, err error) {
 	}
 	for _, i := range importPaths(names) {
 		p, err := listPackage(i)
-		if err != nil {
-			return nil, err
+		if p != nil {
+			a = append(a, p)
 		}
-		a = append(a, p)
+		if err != nil {
+			if _, ok := err.(*build.MultiplePackageError); ok {
+				log.Printf("warning: %v\n", err)
+			} else {
+				return a, err
+			}
+		}
 	}
 	return a, nil
 }
