@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"go/build"
+	"go/parser"
+	"go/token"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -87,13 +90,125 @@ func checkGoroot(p *build.Package, err error) (*build.Package, error) {
 	return p, err
 }
 
-// listPackage specified by path
-func listPackage(path string) (*Package, error) {
+type goPkgFiles struct {
+	pkg   string
+	files []string
+}
+
+func getAllFilesInDirPerPackage(dir string) ([]*goPkgFiles, error) {
+	infos, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var goFiles []string
+	for _, fi := range infos {
+		if !fi.Mode().IsRegular() {
+			continue
+		}
+		name := fi.Name()
+		if strings.HasSuffix(name, ".go") {
+			goFiles = append(goFiles, filepath.Join(dir, name))
+		}
+	}
+	filesPerPackage := make(map[string]*goPkgFiles)
+	var filesSlice []*goPkgFiles
+	for _, f := range goFiles {
+		fset := token.NewFileSet()
+		p, err := parser.ParseFile(fset, f, nil, parser.PackageClauseOnly)
+		if err != nil {
+			return nil, err
+		}
+		pkgName := p.Name.Name
+		set, ok := filesPerPackage[pkgName]
+		if !ok {
+			set = &goPkgFiles{pkg: pkgName}
+			filesPerPackage[pkgName] = set
+			filesSlice = append(filesSlice, set)
+		}
+		set.files = append(set.files, f)
+	}
+	return filesSlice, nil
+}
+
+type goPkgFilesSort []*goPkgFiles
+
+func (a goPkgFilesSort) Len() int {
+	return len(a)
+}
+
+func (a goPkgFilesSort) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a goPkgFilesSort) Less(i, j int) bool {
+	if len(a[i].files) < len(a[j].files) {
+		return true
+	}
+	if len(a[i].files) > len(a[j].files) {
+		return false
+	}
+	if a[i].pkg == "main" {
+		return true
+	}
+	if a[j].pkg == "main" {
+		return false
+	}
+	return false
+}
+
+func getStowawayName(path string) string {
+	suffix := "GODEP_STOWAWAY"
+	return fmt.Sprintf("%s.%s", path, suffix)
+}
+
+func bringTheFilesBackToNormal(renamed []string) {
+	for _, f := range renamed {
+		old := getStowawayName(f)
+		log.Printf("Renaming %q back to %q\n", old, f)
+		_ = os.Rename(old, f)
+	}
+}
+
+// stowAwayPackages renames all the files belonging to the extra
+// packages in the directory, so they are not parsed by build context.
+//
+// Determining whether a package is an extra one is done by comparing
+// the number of files each package has in the directory. The package
+// with most files is kept intact, the others are extra. The exception
+// is main package - it usually is an extra.
+//
+// The returned string array should be passed to
+// bringTheFilesBackToNormal in the deferred call.
+func stowAwayPackages(mp *build.MultiplePackageError) []string {
+	filesPerPackage, err := getAllFilesInDirPerPackage(mp.Dir)
+	if err != nil {
+		return nil
+	}
+	sort.Sort(goPkgFilesSort(filesPerPackage))
+	var renamed []string
+	defer func() {
+		bringTheFilesBackToNormal(renamed)
+	}()
+	for len(filesPerPackage) > 1 {
+		for _, f := range filesPerPackage[0].files {
+			renamed = append(renamed, f)
+			n := getStowawayName(f)
+			log.Printf("Renaming %q to %q\n", f, n)
+			if err := os.Rename(f, n); err != nil {
+				return nil
+			}
+		}
+		filesPerPackage = filesPerPackage[1:]
+	}
+	retRenamed := renamed
+	renamed = nil
+	return retRenamed
+}
+
+func tryHardToListPackage(path string) (*build.Package, string, []string, error) {
 	var dir string
 	var lp *build.Package
 	var err error
-	deps := make(map[string]bool)
-	imports := make(map[string]bool)
 	if build.IsLocalImport(path) {
 		dir = path
 		if !filepath.IsAbs(dir) {
@@ -106,11 +221,28 @@ func listPackage(path string) (*Package, error) {
 	} else {
 		dir, err = os.Getwd()
 		if err != nil {
-			return nil, err
+			return nil, "", nil, err
 		}
 		lp, err = buildContext.Import(path, dir, 0)
 		lp, err = checkGoroot(lp, err)
 	}
+	if err != nil {
+		if err2, ok := err.(*build.MultiplePackageError); ok {
+			if stowed := stowAwayPackages(err2); stowed != nil {
+				lp, dir, stowed2, err := tryHardToListPackage(path)
+				return lp, dir, append(stowed, stowed2...), err
+			}
+		}
+		return lp, dir, nil, err
+	}
+	return lp, dir, nil, nil
+}
+
+// listPackage specified by path
+func listPackage(path string) (*Package, []string, error) {
+	lp, dir, stowed, err := tryHardToListPackage(path)
+	deps := make(map[string]bool)
+	imports := make(map[string]bool)
 	p := &Package{
 		Dir:            lp.Dir,
 		Root:           lp.Root,
@@ -125,7 +257,7 @@ func listPackage(path string) (*Package, error) {
 	}
 	p.Standard = lp.Goroot && lp.ImportPath != "" && !strings.Contains(lp.ImportPath, ".")
 	if err != nil {
-		return p, err
+		return p, stowed, err
 	}
 	debugln("Looking For Package:", path, "in", dir)
 	ppln(lp)
@@ -154,6 +286,7 @@ func listPackage(path string) (*Package, error) {
 				goto Found
 			}
 		}
+	Again:
 		// Wasn't found above, so resolve it using the build.Context
 		dp, err = buildContext.Import(i, ip.Dir, 0)
 		if err != nil {
@@ -169,6 +302,12 @@ func listPackage(path string) (*Package, error) {
 					panic("Unknown error importing GOROOT package: " + dp.ImportPath)
 				}
 			} else {
+				if err2, ok := err.(*build.MultiplePackageError); ok {
+					if tmpStowed := stowAwayPackages(err2); tmpStowed != nil {
+						stowed = append(stowed, tmpStowed...)
+						goto Again
+					}
+				}
 				debugln("Warning: Error importing dependent package")
 				ppln(err)
 			}
@@ -199,7 +338,7 @@ func listPackage(path string) (*Package, error) {
 	sort.Strings(p.Deps)
 	debugln("Looking For Package:", path, "in", dir)
 	ppln(p)
-	return p, nil
+	return p, stowed, nil
 }
 
 // All of the following functions were vendored from go proper. Locations are noted in comments, but may change in future Go versions.
