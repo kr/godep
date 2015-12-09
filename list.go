@@ -77,15 +77,6 @@ NextImport:
 	}
 }
 
-func checkGoroot(p *build.Package, err error) (*build.Package, error) {
-	if p.Goroot && err != nil {
-		buildContext.UseAllFiles = false
-		p, err = buildContext.Import(p.ImportPath, p.Dir, 0)
-		buildContext.UseAllFiles = true
-	}
-	return p, err
-}
-
 // listPackage specified by path
 func listPackage(path string) (*Package, error) {
 	var dir string
