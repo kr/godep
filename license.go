@@ -26,9 +26,12 @@ var LegalFileSubstring = []string{
 	"thirdparty",
 }
 
-// IsLicenseFile returns true if the filename might be contain a
+// IsLicenseFile returns true if the filename is likely to contain a
 // software license
 func IsLicenseFile(filename string) bool {
+	if strings.HasSuffix(filename, ".go") {
+		return false
+	}
 	lowerfile := strings.ToLower(filename)
 	for _, prefix := range LicenseFilePrefix {
 		if strings.HasPrefix(lowerfile, prefix) {
@@ -39,8 +42,11 @@ func IsLicenseFile(filename string) bool {
 }
 
 // IsLegalFile returns true if the file is likely to contain some type
-// of of legal declaration or licensing information
+// of legal declaration or licensing information
 func IsLegalFile(filename string) bool {
+	if strings.HasSuffix(filename, ".go") {
+		return false
+	}
 	lowerfile := strings.ToLower(filename)
 	for _, prefix := range LicenseFilePrefix {
 		if strings.HasPrefix(lowerfile, prefix) {
