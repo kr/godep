@@ -17,7 +17,7 @@ import (
 )
 
 // rewrite visits the go files in pkgs, plus all go files
-// in the directory tree Godeps, rewriting import statments
+// in the directory tree Godeps, rewriting import statements
 // according to the rules for func qualify.
 func rewrite(pkgs []*Package, qual string, paths []string) error {
 	for _, path := range pkgFiles(pkgs) {
@@ -41,7 +41,7 @@ func pkgFiles(pkgs []*Package) []string {
 }
 
 // rewriteTree recursively visits the go files in path, rewriting
-// import statments according to the rules for func qualify.
+// import statements according to the rules for func qualify.
 // This function ignores the 'testdata' directory.
 func rewriteTree(path, qual string, paths []string) error {
 	w := fs.Walk(path)
@@ -68,7 +68,7 @@ func rewriteTree(path, qual string, paths []string) error {
 	return nil
 }
 
-// rewriteGoFile rewrites import statments in the named file
+// rewriteGoFile rewrites import statements in the named file
 // according to the rules for func qualify.
 func rewriteGoFile(name, qual string, paths []string) error {
 	printerConfig := &printer.Config{Mode: printer.TabIndent | printer.UseSpaces, Tabwidth: 8}
