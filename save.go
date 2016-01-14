@@ -19,7 +19,7 @@ import (
 
 var cmdSave = &Command{
 	Name:  "save",
-	Args:  "[-r] [-t] [packages]",
+	Args:  "[-r] [-t] [-T] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -56,19 +56,20 @@ files outside the project.
 If -t is given, test files (*_test.go files + testdata directories) are
 also saved.
 
+If -T is given, packages required by test files are not saved. -T and -t must be given at the same time.
 For more about specifying packages, see 'go help packages'.
 `,
 	Run: runSave,
 }
 
 var (
-	saveR, saveT bool
+	saveR, saveT, skipTestImports bool
 )
 
 func init() {
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
-
+	cmdSave.Flag.BoolVar(&skipTestImports, "T", false, "skip files that are imported by test files (it shouldn't be used with -t)")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -103,6 +104,10 @@ func projectPackages(dDir string, a []*Package) []*Package {
 }
 
 func save(pkgs []string) error {
+	if saveT && skipTestImports {
+		return errors.New("-t and -T must not be given at the same time")
+	}
+
 	dp, err := dotPackage()
 	if err != nil {
 		return err
@@ -149,7 +154,7 @@ func save(pkgs []string) error {
 	debugln("Filtered projectPackages")
 	ppln(projA)
 
-	err = gnew.fill(a, dp.ImportPath)
+	err = gnew.fill(a, dp.ImportPath, !skipTestImports)
 	if err != nil {
 		return err
 	}

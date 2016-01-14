@@ -64,7 +64,7 @@ func loadDefaultGodepsFile() (Godeps, error) {
 }
 
 // pkgs is the list of packages to read dependencies for
-func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
+func (g *Godeps) fill(pkgs []*Package, destImportPath string, fillTestImports bool) error {
 	debugln("fill", destImportPath)
 	ppln(pkgs)
 	var err1 error
@@ -84,21 +84,24 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 		testImports = append(testImports, p.TestImports...)
 		testImports = append(testImports, p.XTestImports...)
 	}
-	ps, err := LoadPackages(testImports...)
-	if err != nil {
-		return err
-	}
-	for _, p := range ps {
-		if p.Standard {
-			continue
+
+	if fillTestImports {
+		ps, err := LoadPackages(testImports...)
+		if err != nil {
+			return err
 		}
-		if p.Error.Err != "" {
-			log.Println(p.Error.Err)
-			err1 = errorLoadingPackages
-			continue
+		for _, p := range ps {
+			if p.Standard {
+				continue
+			}
+			if p.Error.Err != "" {
+				log.Println(p.Error.Err)
+				err1 = errorLoadingPackages
+				continue
+			}
+			path = append(path, p.ImportPath)
+			path = append(path, p.Deps...)
 		}
-		path = append(path, p.ImportPath)
-		path = append(path, p.Deps...)
 	}
 	debugln("path", path)
 	for i, p := range path {
@@ -106,7 +109,7 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 	}
 	path = uniq(path)
 	debugln("uniq, unqualify'd path", path)
-	ps, err = LoadPackages(path...)
+	ps, err := LoadPackages(path...)
 	if err != nil {
 		return err
 	}

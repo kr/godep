@@ -94,16 +94,17 @@ func setGlobals(vendor bool) {
 
 func TestSave(t *testing.T) {
 	var cases = []struct {
-		cwd      string
-		args     []string
-		flagR    bool
-		flagT    bool
-		vendor   bool
-		start    []*node
-		altstart []*node
-		want     []*node
-		wdep     Godeps
-		werr     bool
+		cwd                 string
+		args                []string
+		flagR               bool
+		flagT               bool
+		vendor              bool
+		start               []*node
+		altstart            []*node
+		want                []*node
+		wdep                Godeps
+		werr                bool
+		flagSkipTestImports bool
 	}{
 		{ // 0 - simple case, one dependency
 			cwd:   "C",
@@ -1447,6 +1448,47 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
+		{ // 37 skip packages required by test files (the effect of -T option)
+			cwd: "C",
+			start: []*node{
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D"), nil},
+						{"main_test.go", pkg("main", "D", "E"), nil},
+						{"+git", "", nil},
+					},
+				},
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D"), nil},
+						{"+git", "D1", nil},
+					},
+				},
+				{
+					"E",
+					"",
+					[]*node{
+						{"main.go", pkg("E"), nil},
+						{"+git", "E1", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/main.go", pkg("main", "D"), nil},
+				{"C/Godeps/_workspace/src/D/main.go", pkg("D"), nil},
+			},
+			wdep: Godeps{
+				ImportPath: "C",
+				Deps: []Dependency{
+					{ImportPath: "D", Comment: "D1"},
+				},
+			},
+			flagSkipTestImports: true,
+		},
 	}
 
 	wd, err := os.Getwd()
@@ -1478,6 +1520,7 @@ func TestSave(t *testing.T) {
 		setGOPATH(root1, root2)
 		saveR = test.flagR
 		saveT = test.flagT
+		skipTestImports = test.flagSkipTestImports
 		err = save(test.args)
 		if g := err != nil; g != test.werr {
 			if err != nil {
