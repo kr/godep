@@ -176,6 +176,10 @@ func (g *Godeps) save() (int64, error) {
 }
 
 func (g *Godeps) writeTo(w io.Writer) (int64, error) {
+	//sort Dependencies
+	sort.Strings(g.Packages)
+	sort.Sort(dependencySlice(g.Deps))
+
 	b, err := json.MarshalIndent(g, "", "\t")
 	if err != nil {
 		return 0, err
