@@ -58,3 +58,11 @@ func pathEqual(a, b string) bool {
 	b = cleanPath(b)
 	return strings.EqualFold(a, b)
 }
+
+// pathAncestor checks if a is an ancestor of b, and
+// deals with case insensitive filesystems and other weirdness
+func pathAncestor(a, b string) bool {
+	a = cleanPath(a)
+	b = cleanPath(b)
+	return strings.HasPrefix(b, a)
+}

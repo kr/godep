@@ -6,6 +6,7 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -131,8 +132,13 @@ func listPackage(path string) (*Package, error) {
 	debugln("Looking For Package:", path, "in", dir)
 	ppln(lp)
 
+	importsNeeded, err := filterVendoredImports(lp.Dir, lp.Imports)
+	if err != nil {
+		return nil, err
+	}
+
 	ds := depScanner{}
-	ds.Add(lp, lp.Imports...)
+	ds.Add(lp, importsNeeded...)
 	for ds.Continue() {
 		ip, i := ds.Next()
 
@@ -148,8 +154,12 @@ func listPackage(path string) (*Package, error) {
 		}
 		ppln(dp)
 		if !dp.Goroot {
+			importsNeeded, err := filterVendoredImports(dp.Dir, dp.Imports)
+			if err != nil {
+				return nil, err
+			}
 			// Don't bother adding packages in GOROOT to the dependency scanner, they don't import things from outside of it.
-			ds.Add(dp, dp.Imports...)
+			ds.Add(dp, importsNeeded...)
 		}
 		debugln("lp:")
 		ppln(lp)
@@ -531,4 +541,42 @@ func matchPackagesInFS(pattern string) []string {
 		return nil
 	})
 	return pkgs
+}
+
+// filterVendoredImports returns a list of all the imports which are not already
+// vendored in the given directory
+func filterVendoredImports(root string, imports []string) ([]string, error) {
+	isValidVendorDirectory := func(dir string) (bool, error) {
+		// for a vendor directory to be valid, it must be a directory
+		// containing .go files
+		fi, err := os.Stat(dir)
+		if os.IsNotExist(err) || !fi.IsDir() {
+			return false, nil
+		} else if err != nil {
+			return false, err
+		}
+		files, err := ioutil.ReadDir(dir)
+		if err != nil {
+			return false, err
+		}
+		if len(files) == 0 {
+		}
+		for _, file := range files {
+			if strings.HasSuffix(file.Name(), ".go") {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+
+	var filteredImports []string
+	for _, importPath := range imports {
+		vendorPath := filepath.Join(root, "vendor", importPath)
+		if isVendored, err := isValidVendorDirectory(vendorPath); err != nil {
+			return nil, err
+		} else if !isVendored {
+			filteredImports = append(filteredImports, importPath)
+		}
+	}
+	return filteredImports, nil
 }
