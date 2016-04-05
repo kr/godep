@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -216,6 +217,10 @@ func fillPackage(p *build.Package) error {
 	if p.Goroot {
 		return nil
 	}
+	version, err := goVersion()
+	if err != nil {
+		return err
+	}
 
 	if p.SrcRoot == "" {
 		for _, base := range build.Default.SrcDirs() {
@@ -268,6 +273,18 @@ NextFile:
 					for _, b := range strings.FieldsFunc(ct[i+len(buildMatch):], buildFieldSplit) {
 						//TODO: appengine is a special case for now: https://github.com/tools/godep/issues/353
 						if b == "ignore" || b == "appengine" {
+							p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
+							continue NextFile
+						}
+						matchesPositive, err := regexp.MatchString("go\\d+\\.\\d+", b)
+						if err != nil {
+							return err
+						}
+						if matchesPositive && b != version {
+							p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
+							continue NextFile
+						}
+						if b == ("!" + version) {
 							p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
 							continue NextFile
 						}
