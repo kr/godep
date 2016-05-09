@@ -1596,6 +1596,10 @@ func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 			if body != "" {
 				run(t, dir, "git", "tag", body)
 			}
+		case n.path == "+rm":
+			if err := os.Remove(filepath.Join(filepath.Dir(path), body)); err != nil {
+				panic("errore moving " + body + " : " + err.Error())
+			}
 		case n.entries == nil && strings.HasPrefix(body, "symlink:"):
 			target := strings.TrimPrefix(body, "symlink:")
 			os.Symlink(target, path)
