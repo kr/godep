@@ -289,11 +289,11 @@ NextFile:
 		// if need to follow build constraints
 		if buildConstraints {
 			var ctx build.Context
-			match,err := ctx.MatchFile("",file)
-			if err!=nil {
+			match, err := ctx.MatchFile("", file)
+			if err != nil {
 				return err
 			}
-			if match==false {
+			if match == false {
 				continue
 			}
 		}
