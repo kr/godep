@@ -16,6 +16,7 @@ import (
 var (
 	cpuprofile       string
 	verbose          bool // Verbose flag for commands that support it
+	buildConstraints bool // whether to follow build constraints, https://github.com/tools/godep/issues/377
 	debug            bool // Debug flag for commands that support it
 	majorGoVersion   string
 	VendorExperiment bool
@@ -126,6 +127,7 @@ func main() {
 			sep = defaultSep(VendorExperiment)
 
 			cmd.Flag.BoolVar(&verbose, "v", false, "enable verbose output")
+			cmd.Flag.BoolVar(&buildConstraints, "b", false, "follow build constraints")
 			cmd.Flag.BoolVar(&debug, "d", false, "enable debug output")
 			cmd.Flag.StringVar(&cpuprofile, "cpuprofile", "", "Write cpu profile to this file")
 			cmd.Flag.Usage = func() { cmd.UsageExit() }
