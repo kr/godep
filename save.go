@@ -56,6 +56,9 @@ files outside the project.
 If -t is given, test files (*_test.go files + testdata directories) are
 also saved.
 
+If -b is given, only dependencies following build constraints will be 
+processed.
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run:          runSave,
