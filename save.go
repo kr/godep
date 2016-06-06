@@ -377,11 +377,25 @@ func copySrc(dir string, deps []Dependency) error {
 			log.Println(err)
 			ok = false
 		}
+		// resolve the symbolic link of repo dir
+		real_dep := dep.dir
+		real_depi, err := os.Lstat(real_dep)
+		for (err == nil) && (real_depi.Mode()&os.ModeSymlink != 0) {
+			real_dep, err = os.Readlink(real_dep)
+			if err == nil {
+				real_depi, err = os.Lstat(real_dep)
+			}
+		}
+		if err != nil {
+			log.Println(err)
+			ok = false
+		}
+		debugln("real_dep", real_dep)
 
 		// copy actual dependency
-		vf := dep.vcs.listFiles(dep.dir)
+		vf := dep.vcs.listFiles(real_dep)
 		debugln("vf", vf)
-		w := fs.Walk(dep.dir)
+		w := fs.Walk(real_dep)
 		for w.Step() {
 			err = copyPkgFile(vf, dir, srcdir, w)
 			if err != nil {
