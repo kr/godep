@@ -25,6 +25,13 @@ https://github.com/golang/go/commit/42206598671a44111c8f726ad33dc7b265bdf669.
 	OnlyInGOPATH: true,
 }
 
+func getRoot(root, path string) string {
+	if root == "" {
+		return filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src", path)
+	}
+	return root
+}
+
 // Three phases:
 // 1. Download all deps
 // 2. Restore all deps (checkout the recorded rev)
@@ -104,15 +111,12 @@ func download(dep *Dependency) error {
 			continue
 		}
 		if fi.IsDir() {
-			dep.root = t
+			// If none found, just pick the first GOPATH entry (AFAICT that's what go get does)
+			dep.root = getRoot(t, rr.Root)
 			break
 		}
 	}
 
-	// If none found, just pick the first GOPATH entry (AFAICT that's what go get does)
-	if dep.root == "" {
-		dep.root = filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src", rr.Root)
-	}
 	ppln("dep", dep)
 
 	if downloaded[rr.Repo] {
