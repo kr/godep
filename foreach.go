@@ -9,8 +9,14 @@ import (
 )
 
 var cmdForeach = &Command{
-	Name:         "foreach",
-	Short:        "run a command in each dependency's path",
+	Name:  "foreach",
+	Short: "run a command in each dependency's path",
+	Long: `
+Foreach runs the provided command for each dependency path in GOPATH. This can
+be useful for checking out the master branch after running "godep restore" to
+avoid breaking "go get -u".
+
+`,
 	Run:          runForeach,
 	OnlyInGOPATH: true,
 }
