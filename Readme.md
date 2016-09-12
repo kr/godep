@@ -10,6 +10,8 @@ This tool assumes you are working in a standard Go workspace, as described in
 http://golang.org/doc/code.html. We expect godep to build on Go 1.4* or newer,
 but you can use it on any project that works with Go 1 or newer.
 
+Please check the [FAQ](FAQ.md) if you have a question.
+
 ## Install
 
 ```console
@@ -67,11 +69,13 @@ time** you run a Go-related command, you wrap it in one of these two ways:
 
 ### Restore
 
-The `godep restore` command is the opposite of `godep save`. It will install the
+The `godep restore` installs the
 package versions specified in `Godeps/Godeps.json` to your `$GOPATH`. This
 modifies the state of packages in your `$GOPATH`. NOTE: `godep restore` leaves
 git repositories in a detached state. `go1.6`+ no longer checks out the master
 branch when doing a `go get`, see [here](https://github.com/golang/go/commit/42206598671a44111c8f726ad33dc7b265bdf669).
+
+Please see the [FAQ](https://github.com/tools/godep/blob/master/FAQ.md#should-i-use-godep-restore) section about restore.
 
 ### Edit-test Cycle
 

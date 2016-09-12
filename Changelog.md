@@ -1,24 +1,48 @@
-#v69 (2016/06/16)
+#v74 (2016/06/01)
+
+* Enable vendor/ on go1.7
+* No longer use a godep workspace, use vendor/ (yay!)
+* Notify that support for Godep workspaces will be removed once go1.8 ships
+
+#v73 (2016/05/31)
+
+* Fix permission changes on Windows via @alexbrand. Closes #481.
+
+#v72 (2016/05/27)
+
+* Improve handling of git remote show origin. Should help in cases where remote HEAD is ambiguous.
+* Add ISSUE_TEMPLATE
+
+#v71 (2016/05/24)
+
+* Preserve permissions on copied files.
+
+#v70 (2016/05/20)
+
+* Fix the May changelog dates
+* No need to call build.Import, we already have the root of the dependency. Fixes an additional comment on #365
+
+#v69 (2016/05/16)
 
 * Make sure `devel-<short sha>` enabled `vendor/` unless there is a classic Godep _workspace already.
 
-#v68 (2016/06/16)
+#v68 (2016/05/16)
 
 * `devel-<short sha>` is always considered newer than any released go version
 
-#v67 (2016/06/13)
+#v67 (2016/05/13)
 
 * Attempt to handle missing deps a little better.
 
-#v66 (2016/06/10)
+#v66 (2016/05/10)
 
 * Use `git remote show origin` to find the default branch when restoring a git based package repository that is in detached head state
 
-#v65 (2016/06/09)
+#v65 (2016/05/09)
 
 * Rewrite update so that it considers new transitive dependencies, both in the same repo and outside of it.
 
-#v64 (2016/06/09)
+#v64 (2016/05/09)
 
 * godep update golang.org/x/tools/go/vcs
 
