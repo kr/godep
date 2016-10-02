@@ -15,6 +15,17 @@ Please check the [FAQ](FAQ.md) if you have a question.
 ## Install
 
 ```console
+$ go get -u github.com/kr/pretty
+$ go get -u github.com/pmezard/go-difflib/difflib
+$ go get -u github.com/gin-gonic/gin
+$ go get -u github.com/kr/pretty
+$ go get -u github.com/mattn/go-colorable
+$ go get -u github.com/mattn/go-isatty
+$ go get -u golang.org/x/sys/unix
+$ go get -u gopkg.in/bluesuncorp/validator.v5
+```
+
+```console
 $ go get github.com/tools/godep
 ```
 
