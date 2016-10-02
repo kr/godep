@@ -19,7 +19,7 @@ import (
 
 var cmdSave = &Command{
 	Name:  "save",
-	Args:  "[-r] [-t] [packages]",
+	Args:  "[-a] [-r] [-t] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -48,6 +48,8 @@ The dependency list is a JSON document with the following structure:
 Any packages already present in the list will be left unchanged.
 To update a dependency to a newer revision, use 'godep update'.
 
+If -a is given, these vendors will be stored together with previously saved.
+
 If -r is given, import statements will be rewritten to refer directly
 to the copied source code. This is not compatible with the vendor
 experiment. Note that this will not rewrite the statements in the
@@ -63,13 +65,13 @@ For more about specifying packages, see 'go help packages'.
 }
 
 var (
-	saveR, saveT bool
+	saveA, saveR, saveT bool
 )
 
 func init() {
+	cmdSave.Flag.BoolVar(&saveA, "a", false, "add import paths to list packages")
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
-
 }
 
 func runSave(cmd *Command, args []string) {
@@ -140,6 +142,24 @@ func save(pkgs []string) error {
 	gnew := &Godeps{
 		ImportPath: dp.ImportPath,
 		GoVersion:  gold.GoVersion,
+	}
+
+	if saveA {
+		var oldPkgName, pkgName string
+
+	NEXTPKG:
+		for i := range gold.Packages {
+			oldPkgName = gold.Packages[i]
+
+			for ii := range pkgs {
+				pkgName = pkgs[ii]
+				if pkgName == oldPkgName {
+					continue NEXTPKG
+				}
+			}
+
+			pkgs = append(pkgs, oldPkgName)
+		}
 	}
 
 	switch len(pkgs) {
