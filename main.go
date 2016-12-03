@@ -78,6 +78,7 @@ func determineVendor(v string) bool {
 	ev := (v == "go1.5" && go15ve == "1") ||
 		(v == "go1.6" && go15ve != "0") ||
 		(v == "go1.7") ||
+		(v == "go1.8") ||
 		(strings.HasPrefix(v, "devel") && go15ve != "0")
 
 	ws := filepath.Join("Godeps", "_workspace")
