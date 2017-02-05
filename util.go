@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -56,5 +57,18 @@ func cleanPath(path string) string {
 func pathEqual(a, b string) bool {
 	a = cleanPath(a)
 	b = cleanPath(b)
+
+	var err error
+	a, err = filepath.EvalSymlinks(a)
+	if err != nil {
+		log.Printf("failed to evaluate symlink: %s: %v", a, err)
+		return false
+	}
+	b, err = filepath.EvalSymlinks(b)
+	if err != nil {
+		log.Printf("failed to evaluate symlink: %s: %v", b, err)
+		return false
+	}
+
 	return strings.EqualFold(a, b)
 }
