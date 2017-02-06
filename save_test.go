@@ -709,49 +709,50 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // 17 - intermediate dependency that uses godep save -r, main -r=false
-			cwd: "C",
-			start: []*node{
-				{
-					"C",
-					"",
-					[]*node{
-						{"main.go", pkg("main", "D"), nil},
-						{"+git", "", nil},
-					},
-				},
-				{
-					"T",
-					"",
-					[]*node{
-						{"main.go", pkg("T"), nil},
-						{"+git", "T1", nil},
-					},
-				},
-				{
-					"D",
-					"",
-					[]*node{
-						{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
-						{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
-						{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
-						{"+git", "D1", nil},
-					},
-				},
-			},
-			want: []*node{
-				{"C/main.go", pkg("main", "D"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
-			},
-			wdep: Godeps{
-				ImportPath: "C",
-				Deps: []Dependency{
-					{ImportPath: "D", Comment: "D1"},
-					{ImportPath: "T", Comment: "T1"},
-				},
-			},
-		},
+		// Removed test because this fork broke support for rewritten imports
+		// { // 17 - intermediate dependency that uses godep save -r, main -r=false
+		// 	cwd: "C",
+		// 	start: []*node{
+		// 		{
+		// 			"C",
+		// 			"",
+		// 			[]*node{
+		// 				{"main.go", pkg("main", "D"), nil},
+		// 				{"+git", "", nil},
+		// 			},
+		// 		},
+		// 		{
+		// 			"T",
+		// 			"",
+		// 			[]*node{
+		// 				{"main.go", pkg("T"), nil},
+		// 				{"+git", "T1", nil},
+		// 			},
+		// 		},
+		// 		{
+		// 			"D",
+		// 			"",
+		// 			[]*node{
+		// 				{"main.go", pkg("D", "D/Godeps/_workspace/src/T"), nil},
+		// 				{"Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+		// 				{"Godeps/Godeps.json", godeps("D", "T", "T1"), nil},
+		// 				{"+git", "D1", nil},
+		// 			},
+		// 		},
+		// 	},
+		// 	want: []*node{
+		// 		{"C/main.go", pkg("main", "D"), nil},
+		// 		{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T"), nil},
+		// 		{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+		// 	},
+		// 	wdep: Godeps{
+		// 		ImportPath: "C",
+		// 		Deps: []Dependency{
+		// 			{ImportPath: "D", Comment: "D1"},
+		// 			{ImportPath: "T", Comment: "T1"},
+		// 		},
+		// 	},
+		// },
 		{ // 18 - intermediate dependency that uses godep save -r, main -r too
 			cwd:   "C",
 			flagR: true,
@@ -830,52 +831,53 @@ func TestSave(t *testing.T) {
 				},
 			},
 		},
-		{ // 20 - include flattened, rewritten deps
-			cwd: "C",
-			start: []*node{
-				{
-					"C",
-					"",
-					[]*node{
-						{"main.go", pkg("main", "D", "T"), nil},
-						{"+git", "", nil},
-					},
-				},
-				{
-					"T",
-					"",
-					[]*node{
-						{"main.go", pkg("T"), nil},
-						{"X/main.go", pkg("X"), nil},
-						{"+git", "T1", nil},
-					},
-				},
-				{
-					"D",
-					"",
-					[]*node{
-						{"main.go", pkg("D", "D/Godeps/_workspace/src/T/X"), nil},
-						{"Godeps/_workspace/src/T/X/main.go", pkg("X"), nil},
-						{"Godeps/Godeps.json", godeps("D", "T/X", "T1"), nil},
-						{"+git", "D1", nil},
-					},
-				},
-			},
-			want: []*node{
-				{"C/main.go", pkg("main", "D", "T"), nil},
-				{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T/X"), nil},
-				{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
-				{"C/Godeps/_workspace/src/T/X/main.go", pkg("X"), nil},
-			},
-			wdep: Godeps{
-				ImportPath: "C",
-				Deps: []Dependency{
-					{ImportPath: "D", Comment: "D1"},
-					{ImportPath: "T", Comment: "T1"},
-					{ImportPath: "T/X", Comment: "T1"},
-				},
-			},
-		},
+		// Removed test because this fork broke support for rewritten imports
+		// { // 20 - include flattened, rewritten deps
+		// 	cwd: "C",
+		// 	start: []*node{
+		// 		{
+		// 			"C",
+		// 			"",
+		// 			[]*node{
+		// 				{"main.go", pkg("main", "D", "T"), nil},
+		// 				{"+git", "", nil},
+		// 			},
+		// 		},
+		// 		{
+		// 			"T",
+		// 			"",
+		// 			[]*node{
+		// 				{"main.go", pkg("T"), nil},
+		// 				{"X/main.go", pkg("X"), nil},
+		// 				{"+git", "T1", nil},
+		// 			},
+		// 		},
+		// 		{
+		// 			"D",
+		// 			"",
+		// 			[]*node{
+		// 				{"main.go", pkg("D", "D/Godeps/_workspace/src/T/X"), nil},
+		// 				{"Godeps/_workspace/src/T/X/main.go", pkg("X"), nil},
+		// 				{"Godeps/Godeps.json", godeps("D", "T/X", "T1"), nil},
+		// 				{"+git", "D1", nil},
+		// 			},
+		// 		},
+		// 	},
+		// 	want: []*node{
+		// 		{"C/main.go", pkg("main", "D", "T"), nil},
+		// 		{"C/Godeps/_workspace/src/D/main.go", pkg("D", "T/X"), nil},
+		// 		{"C/Godeps/_workspace/src/T/main.go", pkg("T"), nil},
+		// 		{"C/Godeps/_workspace/src/T/X/main.go", pkg("X"), nil},
+		// 	},
+		// 	wdep: Godeps{
+		// 		ImportPath: "C",
+		// 		Deps: []Dependency{
+		// 			{ImportPath: "D", Comment: "D1"},
+		// 			{ImportPath: "T", Comment: "T1"},
+		// 			{ImportPath: "T/X", Comment: "T1"},
+		// 		},
+		// 	},
+		// },
 		{ // 21 - find transitive dependencies across roots
 			cwd:   "C",
 			flagR: true,

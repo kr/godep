@@ -239,11 +239,12 @@ func save(pkgs []string) error {
 		f, _ := filepath.Split(srcdir)
 		writeVCSIgnore(f)
 	}
+	if !saveR {
+		return nil
+	}
 	var rewritePaths []string
-	if saveR {
-		for _, dep := range gnew.Deps {
-			rewritePaths = append(rewritePaths, dep.ImportPath)
-		}
+	for _, dep := range gnew.Deps {
+		rewritePaths = append(rewritePaths, dep.ImportPath)
 	}
 	verboseln("Rewriting paths (if necessary)")
 	ppln(rewritePaths)
