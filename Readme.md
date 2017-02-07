@@ -65,6 +65,29 @@ time** you run a Go-related command, you wrap it in one of these two ways:
 `-r` isn't necessary with go1.6+ and isn't allowed.
 
 
+It is also possible to vendor "main" packages, but not through a go source file
+in the project. Instead, create a file named "appVendor" and add the desired
+packages there, one in each line. The file may look like as follows:
+
+```
+// You can use double slash to write a comment
+# But you can also use hash for the same purpose
+
+github.com/fizz/buzz
+github.com/foo/bar
+
+
+// Empty lines are also allowed
+github.com/one/two // Comments after package are allowed
+github.com/three/four # Same with hash comments
+
+// Vendor in the quux app, we build it ourselves and use it in tests
+github.com/a/b/apps/quux
+```
+
+All the packages in "appVendor" file together with their dependencies will be
+added to the Godeps file.
+
 ## Additional Operations
 
 ### Restore

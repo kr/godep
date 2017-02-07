@@ -86,7 +86,11 @@ func (g *Godeps) fill(pkgs []*Package, destImportPath string) error {
 		testImports = append(testImports, p.TestImports...)
 		testImports = append(testImports, p.XTestImports...)
 	}
-	ps, err := LoadPackages(testImports...)
+	appPkgs, err := getAppPkgs()
+	if err != nil {
+		return err
+	}
+	ps, err := LoadPackages(append(testImports, appPkgs...)...)
 	if err != nil {
 		return err
 	}
