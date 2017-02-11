@@ -289,6 +289,19 @@ func fillPackage(p *build.Package) error {
 	var imports []string
 NextFile:
 	for _, file := range gofiles {
+
+		// if need to follow build constraints
+		if buildConstraints {
+			var ctx build.Context
+			match, err := ctx.MatchFile("", file)
+			if err != nil {
+				return err
+			}
+			if match == false {
+				continue
+			}
+		}
+
 		debugln(file)
 		pf, err := parser.ParseFile(token.NewFileSet(), file, nil, parser.ImportsOnly|parser.ParseComments)
 		if err != nil {
