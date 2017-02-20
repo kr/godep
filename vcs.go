@@ -41,7 +41,7 @@ var vcsGit = &VCS{
 
 	IdentifyCmd: "rev-parse HEAD",
 	DescribeCmd: "describe --tags",
-	DiffCmd:     "diff {rev}",
+	DiffCmd:     "diff {rev} .",
 	ListCmd:     "ls-files --full-name",
 	RootCmd:     "rev-parse --show-cdup",
 
@@ -53,7 +53,7 @@ var vcsHg = &VCS{
 
 	IdentifyCmd: "parents --template {node}",
 	DescribeCmd: "log -r . --template {latesttag}-{latesttagdistance}",
-	DiffCmd:     "diff -r {rev}",
+	DiffCmd:     "diff -r {rev} .",
 	ListCmd:     "status --all --no-status",
 	RootCmd:     "root",
 
