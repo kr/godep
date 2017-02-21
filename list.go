@@ -252,6 +252,10 @@ func fillPackage(p *build.Package) error {
 	if p.Goroot {
 		return nil
 	}
+	version, err := goVersion()
+	if err != nil {
+		return err
+	}
 
 	if p.SrcRoot == "" {
 		for _, base := range build.Default.SrcDirs() {
@@ -302,6 +306,18 @@ NextFile:
 				for _, t := range strings.FieldsFunc(ct[i+len(buildMatch):], buildFieldSplit) {
 					for _, tag := range ignoreTags {
 						if t == tag {
+							p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
+							continue NextFile
+						}
+						matchesPositive, err := regexp.MatchString("go\\d+\\.\\d+", b)
+						if err != nil {
+							return err
+						}
+						if matchesPositive && b != version {
+							p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
+							continue NextFile
+						}
+						if b == ("!" + version) {
 							p.IgnoredGoFiles = append(p.IgnoredGoFiles, fname)
 							continue NextFile
 						}
