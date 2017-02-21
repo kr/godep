@@ -1448,13 +1448,12 @@ func TestSave(t *testing.T) {
 			want: []*node{
 				{"C/main.go", pkg("main", "D"), nil},
 				{"C/vendor/D/main.go", pkg("D", "T"), nil},
-				{"C/vendor/T/main.go", pkg("T"), nil},
+				{"C/vendor/D/vendor/T/main.go", pkg("T"), nil},
 			},
 			wdep: Godeps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
-					{ImportPath: "T", Comment: "T1"},
 				},
 			},
 		},

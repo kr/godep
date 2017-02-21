@@ -172,7 +172,8 @@ func (v *VCS) listFiles(dir string) vcsFiles {
 				panic(err) // this should not happen
 			}
 
-			if pathEqual(filepath.Dir(path), dir) {
+			if pathEqual(filepath.Dir(path), dir) ||
+				pathAncestor(filepath.Join(dir, "vendor"), path) {
 				files[path] = true
 			}
 		}
