@@ -20,6 +20,7 @@ type VCS struct {
 	DescribeCmd string
 	DiffCmd     string
 	ListCmd     string
+	LogCmd      string
 	RootCmd     string
 
 	// run in sandbox repos
@@ -42,6 +43,7 @@ var vcsGit = &VCS{
 	IdentifyCmd: "rev-parse HEAD",
 	DescribeCmd: "describe --tags",
 	DiffCmd:     "diff {rev}",
+	LogCmd:      "log {rev}..HEAD",
 	ListCmd:     "ls-files --full-name",
 	RootCmd:     "rev-parse --show-cdup",
 

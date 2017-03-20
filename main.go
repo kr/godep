@@ -66,6 +66,7 @@ var commands = []*Command{
 	cmdPath,
 	cmdRestore,
 	cmdUpdate,
+	cmdOutdated,
 	cmdDiff,
 	cmdVersion,
 }
