@@ -221,7 +221,7 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, []Dependency, error) {
 	repoMask := make(map[string]bool)
 	for i := range deps {
 		if !deps[i].matched {
-			repoMask[deps[i].root] = true
+			repoMask[deps[i].ImportPath] = true
 		}
 	}
 
@@ -254,7 +254,7 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, []Dependency, error) {
 
 	var toUpdate, toRemove []Dependency
 	for _, d := range deps {
-		if !d.matched || repoMask[d.root] {
+		if !d.matched || repoMask[d.ImportPath] {
 			continue
 		}
 		if d.missing {
