@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/tools/go/vcs"
 )
@@ -81,11 +82,29 @@ func runRestore(cmd *Command, args []string) {
 	checkErr("Error checking some deps.")
 }
 
-var downloaded = make(map[string]bool)
+var (
+	downloaded          = make(map[string]bool)
+	seenImportPathRoots = make(map[string]*Dependency)
+)
 
 // download the given dependency.
 // 2 Passes: 1) go get -d <pkg>, 2) git pull (if necessary)
 func download(dep *Dependency) error {
+	// check whether we have seen a prefix of the ImportPath already
+	ip := dep.ImportPath
+	for {
+		if seen, ok := seenImportPathRoots[ip]; ok {
+			verboseln("Skipping because of already seen import path", ip)
+			dep.root = filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src", ip)
+			dep.vcs = seen.vcs
+			return nil
+		}
+		lastSlash := strings.LastIndex(ip, "/")
+		if lastSlash == -1 {
+			break
+		}
+		ip = ip[0:lastSlash]
+	}
 
 	rr, err := vcs.RepoRootForImportPath(dep.ImportPath, debug)
 	if err != nil {
@@ -93,6 +112,7 @@ func download(dep *Dependency) error {
 		return err
 	}
 	ppln("rr", rr)
+	seenImportPathRoots[rr.Root] = dep
 
 	dep.vcs = cmd[rr.VCS]
 
