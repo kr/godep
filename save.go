@@ -19,7 +19,7 @@ import (
 
 var cmdSave = &Command{
 	Name:  "save",
-	Args:  "[-r] [-t] [packages]",
+	Args:  "[-r] [-t] [-x pattern] [packages]",
 	Short: "list and copy dependencies into Godeps",
 	Long: `
 
@@ -56,6 +56,8 @@ files outside the project.
 If -t is given, test files (*_test.go files + testdata directories) are
 also saved.
 
+If -x is given, packages matching the supplied regex pattern are excluded.
+
 For more about specifying packages, see 'go help packages'.
 `,
 	Run:          runSave,
@@ -63,13 +65,14 @@ For more about specifying packages, see 'go help packages'.
 }
 
 var (
-	saveR, saveT bool
+	saveR, saveT   bool
+	excludePattern string
 )
 
 func init() {
 	cmdSave.Flag.BoolVar(&saveR, "r", false, "rewrite import paths")
 	cmdSave.Flag.BoolVar(&saveT, "t", false, "save test files")
-
+	cmdSave.Flag.StringVar(&excludePattern, "x", "", "exclude packages matching pattern")
 }
 
 func runSave(cmd *Command, args []string) {
@@ -173,6 +176,9 @@ func save(pkgs []string) error {
 	debugln("New Godeps Filled")
 	ppln(gnew)
 
+	exclusions := excludeDeps(gnew.Deps)
+	gnew.removeDeps(exclusions)
+
 	if gnew.Deps == nil {
 		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
@@ -213,6 +219,7 @@ func save(pkgs []string) error {
 	ppln(rem)
 	add := subDeps(gnew.Deps, gold.Deps)
 	ppln(add)
+
 	if len(rem) > 0 {
 		verboseln("Deps to remove:")
 		for _, r := range rem {
@@ -330,6 +337,22 @@ func carryVersion(a *Godeps, db *Dependency) error {
 	}
 	// No related package in the list, must be a new repo.
 	return nil
+}
+
+// excludeDeps returns dependencies that match the exclusion pattern
+func excludeDeps(a []Dependency) (result []Dependency) {
+	result = make([]Dependency, 0)
+	if len(excludePattern) == 0 {
+		return
+	}
+	for _, dep := range a {
+		match, _ := regexp.MatchString(excludePattern, dep.ImportPath)
+		if match {
+			result = append(result, dep)
+			verboseln("Excluding Dep: " + dep.ImportPath)
+		}
+	}
+	return
 }
 
 // subDeps returns a - b, using ImportPath for equality.
